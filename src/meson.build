@@ -1,24 +1,13 @@
 version_split = meson.project_version().split('.')
 api_version = version_split[0] + '.' + version_split[1]
-gir = 'TesteCoisas-' + api_version + '.gir'
-typelib = 'TesteCoisas-' + api_version + '.typelib'
-
-# config = configure_file(
-#   input: 'config.vala.in',
-#   output: 'config.vala',
-#   configuration: {
-#     'VERSION': meson.project_version(),
-#     'MAJOR_VERSION': version_split[0],
-#     'MINOR_VERSION': version_split[1],
-#     'MICRO_VERSION': version_split[2],
-#   },
-# )
+gir = 'NetworkAgent-' + api_version + '.gir'
+typelib = 'NetworkAgent-' + api_version + '.typelib'
 
 deps = [
-  # dependency('glib-2.0'),
+  dependency('glib-2.0'),
   dependency('gobject-2.0'),
-  # dependency('gio-2.0'),
-  # dependency('json-glib-1.0'),
+  dependency('libsecret-1'),
+  dependency('libnm')
 ]
 
 sources = [
