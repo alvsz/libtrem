@@ -64,17 +64,18 @@ namespace libTrem {
     }
 
     private void on_location_update() {
-      stdout.printf("location updated\n");
       GClue.Location l = simple.get_location();
 
       if (l == null) return;
+
+      latitude = l.latitude;
+      longitude = l.longitude;
+      this.location_updated(latitude,longitude);
 
       GWeather.Location w = GWeather.Location.get_world();
 
       if (w == null) return;
 
-      latitude = l.latitude;
-      longitude = l.longitude;
       GWeather.Location city = w.find_nearest_city(latitude,longitude);
 
       if (city == null) return;
@@ -89,13 +90,12 @@ namespace libTrem {
     }
     
     private void on_weather_update(GWeather.Info i) {
-      stdout.printf("weather updated\n");
       bool network_error = i.network_error();
       available = !network_error;
 
       if (network_error) return;
 
-      print(i.get_temp_summary());
+      this.weather_updated();
     }
   }
 }
