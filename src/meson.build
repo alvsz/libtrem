@@ -1,17 +1,17 @@
 version_split = meson.project_version().split('.')
 api_version = version_split[0] + '.' + version_split[1]
-gir = 'NetworkAgent-' + api_version + '.gir'
-typelib = 'NetworkAgent-' + api_version + '.typelib'
+gir = 'libTrem-' + api_version + '.gir'
+typelib = 'libTrem-' + api_version + '.typelib'
 
 deps = [
   dependency('glib-2.0'),
   dependency('gobject-2.0'),
-  dependency('libsecret-1'),
-  dependency('libnm')
+  dependency('libgeoclue-2.0'),
+  dependency('gweather4'),
 ]
 
 sources = [
-  'test.vala',
+  'weather.vala',
 ]
 
 lib = library(
