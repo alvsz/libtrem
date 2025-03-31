@@ -1,59 +1,85 @@
 namespace libTrem {
   public class Weather: Object {
-    private bool _available = false;
-    private double _latitude = 0;
-    private double _longitude = 0;
-    private string _city_name = "";
+    private GWeather.Info info;
+    private GClue.Simple simple;
 
-    private GWeather.Info _info;
-    private GClue.Simple _simple;
-    private GClue.Location _location;
+    public double latitude { private set; public get; }
+    public double longitude { private set; public get; }
+    public string city_name { private set; public get; }
+    public bool available { private set; public get; }
+    public string app_id { public get; construct; }
+    public string contact_info { get; construct; }
 
-    private void _onLocationUpdate(GWeather.Location l) {
-      if (l == null || !l.has_coords()) return;
-
-      // _latitude = l.
-      GWeather.Location w = GWeather.Location.get_world();
-
-      if (w == null) return;
-
-      l.get_coords(out _latitude, out _longitude);
-      GWeather.Location city = w.find_nearest_city(_latitude,_longitude);
-
-      if (city == null) return;
-
-      if (_info == null)
-        _info = new GWeather.Info(city);
-      else
-        _info.set_location(city);
-
-      _city_name = city.get_name();
-      _info.update();
-    }
-    
-    private void _onWeatherUpdate(GWeather.Info i) {
-      bool network_error = i.network_error();
-      _available = !network_error;
-
-      if (network_error) return;
-
-      print(i.get_temp_summary());
+    public Weather(string app_id, string contact_info) {
+      Object(app_id: app_id, contact_info: contact_info);
     }
 
-    async Weather(string app_id) {
+    construct {
+      if (app_id == null)
+        error("app_id não pode ser nulo");
+      if (contact_info == null)
+        error("contact_info não pode ser nulo");
+
       try {
-        _simple = yield new GClue.Simple (app_id,GClue.AccuracyLevel.EXACT,null);
-        _location = _simple.get_location ();
-
-        if (_location == null) return;
-
-        _location.connect ("notify",this._onLocationUpdate);
-        _info.connect("updated",this._onWeatherUpdate);
+        make_gclue_simple.begin();
       }
       catch (Error err) {
         warning ("Error: %s\n", err.message);
       }
-      // _info = new GWeather.Info
+    }
+
+    private async void make_gclue_simple() throws Error {
+        simple = yield new GClue.Simple (app_id,GClue.AccuracyLevel.EXACT,null);
+
+        simple.notify["location"].connect(on_location_update);
+        on_location_update();
+
+        info.updated.connect(on_weather_update);
+        on_weather_update(info);
+    }
+
+    private GWeather.Info get_weather_info(GWeather.Location l) {
+      GWeather.Info i = new GWeather.Info(l);
+      i.application_id = app_id;
+      i.contact_info = contact_info;
+      i.enabled_providers = GWeather.Provider.METAR | GWeather.Provider.MET_NO | GWeather.Provider.OWM;
+      
+      return i;
+    }
+
+    private void on_location_update() {
+      stdout.printf("location updated\n");
+      GClue.Location l = simple.get_location();
+
+      if (l == null) return;
+
+      GWeather.Location w = GWeather.Location.get_world();
+
+      if (w == null) return;
+
+      latitude = l.latitude;
+      longitude = l.longitude;
+      GWeather.Location city = w.find_nearest_city(latitude,longitude);
+
+      if (city == null) return;
+
+      if (info == null)
+        info = get_weather_info(city);
+      else
+        info.set_location(city);
+
+      city_name = city.get_name();
+      info.update();
+    }
+    
+    private void on_weather_update(GWeather.Info i) {
+      stdout.printf("weather updated\n");
+      bool network_error = i.network_error();
+      available = !network_error;
+
+      if (network_error) return;
+
+      print(i.get_temp_summary());
     }
   }
 }
