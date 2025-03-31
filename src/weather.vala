@@ -6,9 +6,25 @@ namespace libTrem {
     public double latitude { private set; public get; }
     public double longitude { private set; public get; }
     public string city_name { private set; public get; }
+    public bool is_daytime { private set; public get; }
+    public string wind { private set; public get; }
+    public string sky { private set; public get; }
+    public string last_updated { private set; public get; }
+    public string temp { private set; public get; }
+    public string temp_summary { private set; public get; }
+    public string temp_min { private set; public get; }
+    public string temp_max { private set; public get; }
+    public string sunrise { private set; public get; }
+    public string sunset { private set; public get; }
+    public string icon_name { private set; public get; }
+    public string humidity { private set; public get; }
+    public string pressure { private set; public get; }
     public bool available { private set; public get; }
     public string app_id { public get; construct; }
     public string contact_info { get; construct; }
+
+    public signal void location_updated(double latitude, double longitude);
+    public signal void weather_updated();
 
     public Weather(string app_id, string contact_info) {
       Object(app_id: app_id, contact_info: contact_info);
