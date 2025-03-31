@@ -95,6 +95,20 @@ namespace libTrem {
 
       if (network_error) return;
 
+      is_daytime = info.is_daytime();
+      wind = info.get_wind();
+      sky = info.get_sky();
+      last_updated = info.get_update();
+      temp = info.get_temp();
+      temp_summary = info.get_temp_summary();
+      temp_min = info.get_temp_min();
+      temp_max = info.get_temp_max();
+      sunrise = info.get_sunrise();
+      sunset = info.get_sunset();
+      icon_name = info.get_icon_name();
+      humidity = info.get_humidity();
+      pressure = info.get_pressure();
+
       this.weather_updated();
     }
   }
