@@ -8,10 +8,14 @@ deps = [
   dependency('gobject-2.0'),
   dependency('libgeoclue-2.0'),
   dependency('gweather4'),
+  dependency('libecal-2.0'),
+  dependency('libedataserver-1.2'),
+  dependency('libical-glib')
 ]
 
 sources = [
   'weather.vala',
+  'evolutionDataServer.vala'
 ]
 
 lib = library(

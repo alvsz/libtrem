@@ -1,5 +1,5 @@
 project(
-  'vala-lib-teste',
+  'libtrem',
   'vala',
   version: run_command('cat', join_paths(meson.project_source_root(), 'version')).stdout().strip(),
   meson_version: '>= 0.62.0',
