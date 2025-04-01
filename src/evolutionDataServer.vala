@@ -92,6 +92,10 @@ namespace libTrem {
     public string uid {
       get { return _source.get_uid(); }
     }
+    public string summary {
+      get { return _source.get_summary().get_value(); }
+      set { _source.set_summary(new ECal.ComponentText(value,null)); }
+    }
     public string location {
       get { return _source?.get_location() ?? ""; }
       set { _source.set_location(value); }
@@ -103,6 +107,18 @@ namespace libTrem {
     public int percent_complete {
       get { return _source.get_percent_complete(); }
       set { _source.set_percent_complete(value); }
+    }
+    public DateTime dtstart  {
+      owned get { return ecal_to_date(_source.get_dtstart()); }
+      set { _source.set_dtstart(date_to_ecal(value)); }
+    }
+    public DateTime  dtend  {
+      owned get { return ecal_to_date(_source.get_dtend()); }
+      set { _source.set_dtend(date_to_ecal(value)); }
+    }
+    public DateTime  due {
+      owned get { return ecal_to_date(_source.get_due()); }
+      set { _source.set_due(date_to_ecal(value)); }
     }
     public string description {
       get {
@@ -123,12 +139,20 @@ namespace libTrem {
         _source.set_descriptions(s);
       }
     }
-    public string status {
-      get { return _source.get_status().to_string(); }
-      // set { _source.set }
-      // set { _source.set_status(new ICal.Pro)}
+    public ICal.PropertyStatus status {
+      get { return _source.get_status(); }
+      set { _source.set_status(value); }
     }
-    
+
+    private DateTime ecal_to_date(ECal.ComponentDateTime d) {
+      return new DateTime.from_unix_local(d.get_value().as_timet_with_zone(ECal.util_get_system_timezone()));
+    }
+
+    private ECal.ComponentDateTime date_to_ecal(DateTime d) {
+      ICal.Time t = new ICal.Time.from_timet_with_zone((time_t)d.to_unix(),0,ECal.util_get_system_timezone());
+      t.set_timezone(ECal.util_get_system_timezone());
+      return new ECal.ComponentDateTime(t,null);
+    }
 
     public CollectionObject(ECal.Component source, ECal.Client client) {
       Object(source: source, client: client);
