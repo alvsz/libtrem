@@ -35,7 +35,7 @@ namespace libTrem {
     }
 
     construct {
-    print("construindo\n\n\n");
+      print("construindo\n\n\n");
       if (app_id == null)
         error("app_id não pode ser nulo");
       if (contact_info == null)

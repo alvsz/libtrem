@@ -229,25 +229,26 @@ namespace libTrem {
 
     protected HashTable<string, Collection> _collections;
     private ECal.ClientSourceType client_type;
+    private string type_name;
 
-    public CollectionTypeService(string type,ECal.ClientSourceType t) {
+    construct {
       EvolutionDataServer e = EvolutionDataServer.get_default();
-      client_type = t;
+      // client_type = t;
 
       e.connect(
-          type + "-added", 
+          type_name + "-added", 
           this.on_collection_added
           );
       e.connect(
-          type + "-removed", 
+          type_name + "-removed", 
           this.on_collection_removed
           );
       e.connect(
-          type + "-changed", 
+          type_name + "-changed", 
           this.on_collection_changed
           );
 
-      switch (type) {
+      switch (type_name) {
         case "calendar":
           e.calendars.foreach((key,value) => {
               on_collection_added(e, value);
@@ -259,6 +260,10 @@ namespace libTrem {
               });
           break;
       }
+    }
+
+    public CollectionTypeService(string type, ECal.ClientSourceType t) {
+      Object(type_name: type, client_type: t);
     }
 
     public List<weak Collection> collections { owned get { return _collections.get_values(); } }
