@@ -1,11 +1,11 @@
 namespace libTrem {
   public class EvolutionDataServer: Object {
-    public signal void tasklist_added (Object a);
-    public signal void tasklist_removed(Object a);
-    public signal void tasklist_changed(Object a);
-    public signal void calendar_added (Object a);
-    public signal void calendar_removed(Object a);
-    public signal void calendar_changed(Object a);
+    public signal void tasklist_added (E.Source a);
+    public signal void tasklist_removed (E.Source a);
+    public signal void tasklist_changed (E.Source a);
+    public signal void calendar_added (E.Source a);
+    public signal void calendar_removed (E.Source a);
+    public signal void calendar_changed (E.Source a);
 
     public HashTable<string,E.Source> calendars { private set; public get; }
     public HashTable<string,E.Source> tasklists { private set; public get; }
@@ -154,6 +154,17 @@ namespace libTrem {
       return new ECal.ComponentDateTime(t,null);
     }
 
+    public async bool save() {
+      SList<ICal.Component> s = new SList<ICal.Component>();
+      s.append(source.get_icalcomponent());
+      try {
+        return client.modify_objects_sync(s,ECal.ObjModType.ALL,ECal.OperationFlags.NONE,null);
+      } catch (Error e) {
+        warning("Error: %s\n", e.message);
+        return false;
+      }
+    }
+
     public CollectionObject(ECal.Component source, ECal.Client client) {
       Object(source: source, client: client);
     }
@@ -162,7 +173,124 @@ namespace libTrem {
       if (source == null || client == null)
         error("source nem client não podem ser null\n");
     }
-    
+  }
+
+  public class Collection : Object {
+    public signal void ready();
+    public signal void changed();
+
+    protected ECal.Client client;
+    protected ECal.ClientView client_view;
+    public E.Source source { get; construct; }
+    public ECal.ClientSourceType source_type { get; construct; }
+
+    public string display_name { get { return source.get_display_name(); } }
+    public string uid { get { return source.get_uid(); } }
+
+    construct {
+      if (source == null)
+        error("source não pode ser null\n");
+
+      init_collection.begin();
+    }
+
+    public Collection(E.Source s, ECal.ClientSourceType t) {
+      Object(source: s, source_type: t);
+    }
+
+    public async GLib.SList<ECal.Component> query_objects(string sexp) throws Error {
+      GLib.SList<ECal.Component> s;
+      yield client.get_object_list_as_comps(sexp,null,out s);
+      return s;
+    }
+
+    public void delete(string uid) {
+      client.remove_object.begin(uid, null, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, null);
+    }
+
+    private async void init_collection() throws Error {
+        client = (ECal.Client) yield ECal.Client.connect(source, source_type, 0, null);
+        yield client.get_view("#t", null, out client_view);
+
+        client_view.objects_added.connect(() => this.changed());
+        client_view.objects_removed.connect(() => this.changed());
+        client_view.objects_modified.connect(() => this.changed());
+
+        this.ready();
+        this.changed();
+    }
+  }
+
+  public class CollectionTypeService : Object {
+    public signal void collection_added(Collection a);
+    public signal void collection_removed(Collection a);
+    public signal void collection_changed(Collection a);
+    public signal void changed();
+
+    protected HashTable<string, Collection> _collections;
+    private ECal.ClientSourceType client_type;
+
+    public CollectionTypeService(string type,ECal.ClientSourceType t) {
+      EvolutionDataServer e = EvolutionDataServer.get_default();
+      client_type = t;
+
+      e.connect(
+          type + "-added", 
+          this.on_collection_added
+          );
+      e.connect(
+          type + "-removed", 
+          this.on_collection_removed
+          );
+      e.connect(
+          type + "-changed", 
+          this.on_collection_changed
+          );
+
+      switch (type) {
+        case "calendar":
+          e.calendars.foreach((key,value) => {
+              on_collection_added(e, value);
+              });
+          break;
+        case "tasklist":
+          e.tasklists.foreach((key,value) => {
+              on_collection_added(e, value);
+              });
+          break;
+      }
+    }
+
+    public List<weak Collection> collections { owned get { return _collections.get_values(); } }
+
+    private void on_collection_added(EvolutionDataServer registry, E.Source source) {
+      Collection c;
+      if(!_collections.lookup_extended(source.get_uid(),null,out c)) {
+        c = new Collection(source,client_type);
+        c.ready.connect(() => {
+            _collections.set(source.get_uid(), c);
+            collection_added(c);
+            changed();
+            });
+      }
+    }
+
+    private void on_collection_removed(EvolutionDataServer registry, E.Source source) {
+      collection_removed(_collections.get(source.get_uid()));
+      _collections.remove(source.get_uid());
+      changed();
+    }
+
+    private void on_collection_changed(EvolutionDataServer registry, E.Source source) {
+      Collection c;
+      if(!_collections.lookup_extended(source.get_uid(),null,out c)) {
+        c = new Collection(source,client_type);
+
+        c.changed();
+        collection_changed(c);
+      }
+      changed();
+    }
   }
 }
 
