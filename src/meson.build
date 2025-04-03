@@ -15,7 +15,8 @@ deps = [
 
 sources = [
   'weather.vala',
-  'evolutionDataServer.vala'
+  'evolutionDataServer.vala',
+  'calendar.vala'
 ]
 
 lib = library(
