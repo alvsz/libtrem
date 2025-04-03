@@ -175,14 +175,14 @@ namespace libTrem {
     }
   }
 
-  public class Collection : Object {
+  public delegate Collection collection_constructor(E.Source s);
+
+  public abstract class Collection : Object {
     public signal void ready();
     public signal void changed();
 
-    protected ECal.Client client;
-    protected ECal.ClientView client_view;
     public E.Source source { get; construct; }
-    public ECal.ClientSourceType source_type { get; construct; }
+    public string source_extension { get; construct; }
 
     public string display_name { get { return source.get_display_name(); } }
     public string uid { get { return source.get_uid(); } }
@@ -194,21 +194,35 @@ namespace libTrem {
       init_collection.begin();
     }
 
-    public Collection(E.Source s, ECal.ClientSourceType t) {
-      Object(source: s, source_type: t);
+    private Collection(E.Source s, string t) {
+      Object(source: s, source_extension: t);
     }
 
-    public async GLib.SList<ECal.Component> query_objects(string sexp) throws Error {
+    public abstract async GLib.SList<Object> query_objects(string sexp) throws Error;
+    public abstract void delete(string uid);
+    protected abstract async void init_collection() throws Error;
+  }
+
+  public class CalendarCollection : Collection {
+    private ECal.Client client;
+    private ECal.ClientView client_view;
+    private ECal.ClientSourceType source_type;
+
+    public CalendarCollection(E.Source s) {
+      base(s, E.SOURCE_EXTENSION_CALENDAR);
+    }
+
+    public override async GLib.SList<Object> query_objects(string sexp) throws Error {
       GLib.SList<ECal.Component> s;
       yield client.get_object_list_as_comps(sexp,null,out s);
       return s;
     }
 
-    public void delete(string uid) {
+    public override void delete(string uid) {
       client.remove_object.begin(uid, null, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, null);
     }
 
-    private async void init_collection() throws Error {
+    protected override async void init_collection() throws Error {
         client = (ECal.Client) yield ECal.Client.connect(source, source_type, 0, null);
         yield client.get_view("#t", null, out client_view);
 
@@ -221,6 +235,16 @@ namespace libTrem {
     }
   }
 
+  public class EventList : CalendarCollection {
+    public EventList(E.Source s) {
+      base(s);
+    }
+
+    public static EventList create(E.Source s) {
+      return new EventList(s);
+    }
+  }
+
   public class CollectionTypeService : Object {
     public signal void collection_added(Collection a);
     public signal void collection_removed(Collection a);
@@ -228,42 +252,37 @@ namespace libTrem {
     public signal void changed();
 
     protected HashTable<string, Collection> _collections;
-    public ECal.ClientSourceType client_type { get; construct; }
-    public string client_type_name { get; construct; }
+    private collection_constructor ctor;
+    public string client_type { get; construct; }
 
     construct {
       EvolutionDataServer e = EvolutionDataServer.get_default();
-      // client_type = t;
 
-      e.connect(
-          client_type_name + "-added", 
-          this.on_collection_added
-          );
-      e.connect(
-          client_type_name + "-removed", 
-          this.on_collection_removed
-          );
-      e.connect(
-          client_type_name + "-changed", 
-          this.on_collection_changed
-          );
+      switch(client_type) {
+        case E.SOURCE_EXTENSION_TASK_LIST:
+          e.tasklist_added.connect(on_collection_added);
+          e.tasklist_removed.connect(on_collection_removed);
+          e.tasklist_changed.connect(on_collection_changed);
 
-      switch (client_type_name) {
-        case "calendar":
-          e.calendars.foreach((key,value) => {
+          e.tasklists.foreach((key,value) => {
               on_collection_added(e, value);
               });
           break;
-        case "tasklist":
-          e.tasklists.foreach((key,value) => {
+        case E.SOURCE_EXTENSION_CALENDAR:
+         e.calendar_added.connect(on_collection_added);
+         e.calendar_removed.connect(on_collection_removed);
+         e.calendar_changed.connect(on_collection_changed);
+
+          e.calendars.foreach((key,value) => {
               on_collection_added(e, value);
               });
           break;
       }
     }
 
-    public CollectionTypeService(string type, ECal.ClientSourceType t) {
-      Object(client_type: t, client_type_name: type);
+    public CollectionTypeService(string t, collection_constructor c) {
+      Object(client_type: t);
+      ctor = c;
     }
 
     public List<weak Collection> collections { owned get { return _collections.get_values(); } }
@@ -271,7 +290,7 @@ namespace libTrem {
     private void on_collection_added(EvolutionDataServer registry, E.Source source) {
       Collection c;
       if(!_collections.lookup_extended(source.get_uid(),null,out c)) {
-        c = new Collection(source,client_type);
+        c = ctor(source);
         c.ready.connect(() => {
             _collections.set(source.get_uid(), c);
             collection_added(c);
@@ -289,7 +308,7 @@ namespace libTrem {
     private void on_collection_changed(EvolutionDataServer registry, E.Source source) {
       Collection c;
       if(!_collections.lookup_extended(source.get_uid(),null,out c)) {
-        c = new Collection(source,client_type);
+        c = ctor(source);
 
         c.changed();
         collection_changed(c);
@@ -297,5 +316,12 @@ namespace libTrem {
       changed();
     }
   }
+
+  public class CalendarService : CollectionTypeService {
+    CalendarService() {
+      base(E.SOURCE_EXTENSION_CALENDAR,EventList.create);
+    }
+  }
+
 }
 
