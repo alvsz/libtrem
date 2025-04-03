@@ -35,15 +35,11 @@ namespace libTrem {
     public EventList(E.Source s) {
       base(s);
     }
-
-    public static EventList create(E.Source s) {
-      return new EventList(s);
-    }
   }
 
   public class CalendarService : CollectionTypeService {
     CalendarService() {
-      base(E.SOURCE_EXTENSION_CALENDAR,EventList.create);
+      base(E.SOURCE_EXTENSION_CALENDAR, (s) => new EventList(s));
     }
   }
 }
