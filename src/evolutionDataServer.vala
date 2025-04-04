@@ -175,8 +175,6 @@ namespace libTrem {
     }
   }
 
-  public delegate Collection collection_constructor(E.Source s);
-
   public abstract class Collection : Object {
     public signal void ready();
     public signal void changed();
@@ -209,11 +207,14 @@ namespace libTrem {
     public signal void collection_changed(Collection a);
     public signal void changed();
 
-    protected HashTable<string, Collection> _collections;
-    private collection_constructor ctor;
+    protected HashTable<string, Collection> _collections = new HashTable<string, Collection>(GLib.str_hash, GLib.str_equal);
+    public Type ctor { get; construct; }
     public string client_type { get; construct; }
 
     construct {
+      if (client_type == null)
+        error("client_type nem collection_constructor não podem ser null\n");
+
       EvolutionDataServer e = EvolutionDataServer.get_default();
 
       switch(client_type) {
@@ -227,20 +228,21 @@ namespace libTrem {
               });
           break;
         case E.SOURCE_EXTENSION_CALENDAR:
-         e.calendar_added.connect(on_collection_added);
-         e.calendar_removed.connect(on_collection_removed);
-         e.calendar_changed.connect(on_collection_changed);
+          e.calendar_added.connect(on_collection_added);
+          e.calendar_removed.connect(on_collection_removed);
+          e.calendar_changed.connect(on_collection_changed);
 
           e.calendars.foreach((key,value) => {
               on_collection_added(e, value);
               });
           break;
+        default:
+          print("default bugou\n\n\n");
       }
     }
 
-    public CollectionTypeService(string t, collection_constructor c) {
-      Object(client_type: t);
-      ctor = c;
+    public CollectionTypeService(string t, Type type) {
+      Object(client_type: t, ctor: type);
     }
 
     public List<weak Collection> collections { owned get { return _collections.get_values(); } }
@@ -248,7 +250,7 @@ namespace libTrem {
     private void on_collection_added(EvolutionDataServer registry, E.Source source) {
       Collection c;
       if(!_collections.lookup_extended(source.get_uid(),null,out c)) {
-        c = ctor(source);
+        c = (Collection) Object.new(ctor,"source",source,null);
         c.ready.connect(() => {
             _collections.set(source.get_uid(), c);
             collection_added(c);
@@ -266,14 +268,12 @@ namespace libTrem {
     private void on_collection_changed(EvolutionDataServer registry, E.Source source) {
       Collection c;
       if(!_collections.lookup_extended(source.get_uid(),null,out c)) {
-        c = ctor(source);
-
+        c = (Collection) Object.new(ctor,"source",source,null);
         c.changed();
         collection_changed(c);
       }
       changed();
     }
   }
-
 }
 
