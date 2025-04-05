@@ -97,7 +97,7 @@ namespace libTrem {
       set { _source.set_summary(new ECal.ComponentText(value,null)); }
     }
     public string location {
-      get { return _source?.get_location() ?? ""; }
+      owned get { return _source.get_location() ?? ""; }
       set { _source.set_location(value); }
     }
     public int priority {
@@ -121,17 +121,16 @@ namespace libTrem {
       set { _source.set_due(date_to_ecal(value)); }
     }
     public string description {
-      get {
+      owned get {
         SList<ECal.ComponentText> descriptions = _source.get_descriptions();
-        StringBuilder sb = new StringBuilder();
+        string s = "";
 
         if (descriptions != null) {
           descriptions.foreach((desc) => {
-              sb.append( desc.get_value());
+              s = s.concat(desc.get_value());
               });
         }
-
-        return sb.str;
+        return s;
       }
       set {
         SList<ECal.ComponentText> s = new SList<ECal.ComponentText>();
@@ -154,6 +153,15 @@ namespace libTrem {
       return new ECal.ComponentDateTime(t,null);
     }
 
+    public CollectionObject(ECal.Component source, ECal.Client client) {
+      Object(source: source, client: client);
+    }
+
+    construct {
+      if (source == null || client == null)
+        error("source nem client não podem ser null\n");
+    }
+
     public async bool save() {
       SList<ICal.Component> s = new SList<ICal.Component>();
       s.append(source.get_icalcomponent());
@@ -163,15 +171,6 @@ namespace libTrem {
         warning("Error: %s\n", e.message);
         return false;
       }
-    }
-
-    public CollectionObject(ECal.Component source, ECal.Client client) {
-      Object(source: source, client: client);
-    }
-
-    construct {
-      if (source == null || client == null)
-        error("source nem client não podem ser null\n");
     }
   }
 
@@ -185,15 +184,15 @@ namespace libTrem {
     public string display_name { get { return source.get_display_name(); } }
     public string uid { get { return source.get_uid(); } }
 
+    protected Collection(E.Source s, string t) {
+      Object(source: s, source_extension: t);
+    }
+
     construct {
       if (source == null)
         error("source não pode ser null\n");
 
       init_collection.begin();
-    }
-
-    protected Collection(E.Source s, string t) {
-      Object(source: s, source_extension: t);
     }
 
     public abstract async GLib.SList<Object> query_objects(string sexp) throws Error;
@@ -210,6 +209,11 @@ namespace libTrem {
     protected HashTable<string, Collection> _collections = new HashTable<string, Collection>(GLib.str_hash, GLib.str_equal);
     public Type ctor { get; construct; }
     public string client_type { get; construct; }
+    public List<weak Collection> collections { owned get { return _collections.get_values(); } }
+
+    public CollectionTypeService(string t, Type type) {
+      Object(client_type: t, ctor: type);
+    }
 
     construct {
       if (client_type == null)
@@ -240,12 +244,6 @@ namespace libTrem {
           print("default bugou\n\n\n");
       }
     }
-
-    public CollectionTypeService(string t, Type type) {
-      Object(client_type: t, ctor: type);
-    }
-
-    public List<weak Collection> collections { owned get { return _collections.get_values(); } }
 
     private void on_collection_added(EvolutionDataServer registry, E.Source source) {
       Collection c;

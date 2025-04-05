@@ -47,7 +47,7 @@ namespace libTrem {
       string end_str = ECal.isodate_from_time_t((time_t)end.to_unix());
 
       string query = """
-        `(occur-in-time-range? 
+        (occur-in-time-range? 
             (make-time "%s")
             (make-time "%s"))
         """.printf(start_str,end_str);
@@ -73,6 +73,6 @@ namespace libTrem {
       base(E.SOURCE_EXTENSION_CALENDAR, typeof(EventList));
     }
     
-    // public GLib.List<weak Collection> calendars { owned get { return this.collections; } }
+    public GLib.List<weak EventList> calendars { owned get { return (GLib.List<weak EventList>)this.collections; } }
   }
 }
