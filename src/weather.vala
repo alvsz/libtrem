@@ -30,9 +30,9 @@ namespace libTrem {
       Object(app_id: app_id, contact_info: contact_info);
     }
 
-    public void update() {
-      info.update();
-    }
+    // public void update() {
+    //   info.update();
+    // }
 
     construct {
       print("construindo\n\n\n");
