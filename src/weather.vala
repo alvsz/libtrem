@@ -20,22 +20,25 @@ namespace libTrem {
     public string humidity { private set; get; }
     public string pressure { private set; get; }
     public bool available { private set; get; }
+
     public string app_id { get; construct; }
     public string contact_info { get; construct; }
+    public bool auto_update { get; construct; default = false; }
+    private uint update_source;
 
     public signal void location_updated(double latitude, double longitude);
     public signal void weather_updated();
 
-    public Weather(string app_id, string contact_info) {
-      Object(app_id: app_id, contact_info: contact_info);
+    public Weather(string app_id, string contact_info, bool? auto_update) {
+      Object(app_id: app_id, contact_info: contact_info, auto_update:auto_update);
     }
 
-    // public void update() {
-    //   info.update();
-    // }
+    ~Weather() {
+      if (auto_update)
+        Source.remove(update_source);
+    }
 
     construct {
-      print("construindo\n\n\n");
       if (app_id == null)
         error("app_id não pode ser nulo");
       if (contact_info == null)
@@ -50,13 +53,19 @@ namespace libTrem {
     }
 
     private async void make_gclue_simple() throws Error {
-        simple = yield new GClue.Simple (app_id,GClue.AccuracyLevel.EXACT,null);
+      simple = yield new GClue.Simple (app_id,GClue.AccuracyLevel.EXACT,null);
 
-        simple.notify["location"].connect(on_location_update);
-        on_location_update();
+      simple.notify["location"].connect(on_location_update);
+      on_location_update();
 
-        info.updated.connect(on_weather_update);
-        on_weather_update(info);
+      info.updated.connect(on_weather_update);
+      on_weather_update(info);
+
+      if (auto_update) 
+        update_source = Timeout.add_seconds(60*60, () => {
+            this.info.update();
+            return true;
+            });
     }
 
     private GWeather.Info get_weather_info(GWeather.Location l) {

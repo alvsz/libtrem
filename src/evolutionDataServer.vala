@@ -150,7 +150,7 @@ namespace libTrem {
     }
 
     private DateTime ecal_to_date(ECal.ComponentDateTime d) {
-      return new DateTime.from_unix_local(d.get_value().as_timet_with_zone(ECal.util_get_system_timezone()));
+      return new DateTime.from_unix_utc(d.get_value().as_timet_with_zone(d.get_value().get_timezone()));
     }
 
     private ECal.ComponentDateTime date_to_ecal(DateTime d) {
