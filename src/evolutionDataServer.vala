@@ -93,7 +93,9 @@ namespace libTrem {
       get { return _source.get_uid(); }
     }
     public string summary {
-      get { return _source.get_summary().get_value(); }
+      owned get {
+        var s = _source.get_summary().get_value();
+        return s; }
       set { _source.set_summary(new ECal.ComponentText(value,null)); }
     }
     public string location {
@@ -123,13 +125,17 @@ namespace libTrem {
     public string description {
       owned get {
         SList<ECal.ComponentText> descriptions = _source.get_descriptions();
-        string s = "";
+        StringBuilder sb = new StringBuilder();
 
         if (descriptions != null) {
           descriptions.foreach((desc) => {
-              s = s.concat(desc.get_value());
+              if (descriptions.position(descriptions.find(desc)) > 0)
+                sb.append(" - ");
+              sb.append(desc.get_value());
               });
         }
+
+        string s = sb.str;
         return s;
       }
       set {
