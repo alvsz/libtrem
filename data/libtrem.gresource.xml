@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/com/github/alvsz/libtrem">
+    <file preprocess="xml-stripblanks">ui/notification.ui</file>
+    <file preprocess="xml-stripblanks">ui/sysTray.ui</file>
+    <file preprocess="xml-stripblanks">ui/notificationCenter.ui</file>
+  </gresource>
+</gresources>

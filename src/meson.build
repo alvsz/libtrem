@@ -13,15 +13,15 @@ deps = [
   dependency('libical-glib')
 ]
 
-sources = [
-  'weather.vala',
-  'evolutionDataServer.vala',
-  'calendar.vala'
+vala_sources = [
+  'services/weather.vala',
+  'services/evolutionDataServer.vala',
+  'services/calendar.vala'
 ]
 
 lib = library(
   meson.project_name(),
-  sources,
+  vala_sources + libtrem_sources,
   dependencies: deps,
   vala_header: meson.project_name() + '.h',
   vala_vapi: meson.project_name() + '-' + api_version + '.vapi',

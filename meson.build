@@ -10,5 +10,8 @@ project(
   ],
 )
 
+libtrem_sources = []
+
+subdir('data')
 subdir('src')
 

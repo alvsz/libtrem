@@ -1,0 +1,26 @@
+using Gtk 4.0;
+using AstalTray 0.1;
+
+template $sysTrayItem: Button {
+  PopoverMenu menu {
+    menu-model: bind template.item as <AstalTray.TrayItem>.menu-model;
+    flags: nested;
+  }
+
+  GestureClick {
+      button: 3;
+      pressed => $open_menu();
+  }
+
+  EventControllerScroll  {
+    scroll => $on_scroll();
+    flags: both_axes;
+  }
+
+  tooltip-markup: bind template.item as <AstalTray.TrayItem>.tooltip-markup;
+  clicked => $on_clicked();
+
+  child: Image {
+    gicon: bind template.item as <AstalTray.TrayItem>.gicon;
+  };
+}
