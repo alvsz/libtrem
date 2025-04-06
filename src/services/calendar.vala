@@ -46,12 +46,9 @@ namespace libTrem {
       string start_str = ECal.isodate_from_time_t((time_t)start.to_unix());
       string end_str = ECal.isodate_from_time_t((time_t)end.to_unix());
 
-      string query = """
-        (occur-in-time-range? 
-            (make-time "%s")
-            (make-time "%s")
-            "%s")
-        """.printf(start_str,end_str,ICal.Timezone.get_utc_timezone().get_location());
+      string query = """(occur-in-time-range? 
+  (make-time "%s")
+  (make-time "%s"))""".printf(start_str,end_str);
 
       try {
         GLib.SList<Object> c = yield query_objects(query);
