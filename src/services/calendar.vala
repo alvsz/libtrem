@@ -49,8 +49,9 @@ namespace libTrem {
       string query = """
         (occur-in-time-range? 
             (make-time "%s")
-            (make-time "%s"))
-        """.printf(start_str,end_str);
+            (make-time "%s")
+            "%s")
+        """.printf(start_str,end_str,ICal.Timezone.get_utc_timezone().get_location());
 
       try {
         GLib.SList<Object> c = yield query_objects(query);
