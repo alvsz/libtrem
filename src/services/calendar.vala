@@ -6,9 +6,9 @@ namespace libTrem {
   }
 
   public class CalendarCollection : Collection {
-    protected ECal.Client client;
+    public ECal.Client client { get; private set; }
     protected ECal.ClientView client_view;
-    protected ECal.ClientSourceType source_type;
+    public ECal.ClientSourceType source_type { get; private set; }
 
     public CalendarCollection(E.Source s) {
       base(s, E.SOURCE_EXTENSION_CALENDAR);

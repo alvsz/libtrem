@@ -4,24 +4,31 @@ gir = 'libTrem-' + api_version + '.gir'
 typelib = 'libTrem-' + api_version + '.typelib'
 
 deps = [
+  # dependency('gtk4'),
+  # dependency('libadwaita-1'),
   dependency('glib-2.0'),
   dependency('gobject-2.0'),
   dependency('libgeoclue-2.0'),
   dependency('gweather4'),
   dependency('libecal-2.0'),
   dependency('libedataserver-1.2'),
-  dependency('libical-glib')
+  dependency('libical-glib'),
+  # dependency('astal-notifd-0.1'),
 ]
 
-vala_sources = [
+vala_services = [
   'services/weather.vala',
   'services/evolutionDataServer.vala',
   'services/calendar.vala'
 ]
+vala_widgets = [
+  # './widgets/notification.vala',
+  # './widgets/notificationCenter.vala',
+]
 
 lib = library(
   meson.project_name(),
-  vala_sources + libtrem_sources,
+  libtrem_sources + vala_services + vala_widgets,
   dependencies: deps,
   vala_header: meson.project_name() + '.h',
   vala_vapi: meson.project_name() + '-' + api_version + '.vapi',
