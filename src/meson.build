@@ -4,8 +4,6 @@ gir = 'libTrem-' + api_version + '.gir'
 typelib = 'libTrem-' + api_version + '.typelib'
 
 deps = [
-  # dependency('gtk4'),
-  # dependency('libadwaita-1'),
   dependency('glib-2.0'),
   dependency('gobject-2.0'),
   dependency('libgeoclue-2.0'),
@@ -13,15 +11,22 @@ deps = [
   dependency('libecal-2.0'),
   dependency('libedataserver-1.2'),
   dependency('libical-glib'),
-  # dependency('astal-notifd-0.1'),
+  dependency('gtk4'),
+  dependency('astal-mpris-0.1'),
+  dependency('astal-cava-0.1'),
+  dependency('gdk-pixbuf-2.0'),
+  dependency('gio-2.0')
 ]
 
 vala_services = [
   'services/weather.vala',
   'services/evolutionDataServer.vala',
-  'services/calendar.vala'
+  'services/calendar.vala',
+  'services/remoteSearch.vala'
 ]
 vala_widgets = [
+  # './widgets/lockscreenMpris.vala',
+  # './widgets/teste.vala',
   # './widgets/notification.vala',
   # './widgets/notificationCenter.vala',
 ]
