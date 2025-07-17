@@ -121,7 +121,9 @@ namespace libTrem {
     public virtual void launch_search(string[] query) {
       try {
         this.app_info.launch(null,null);
-      } catch (Error e) { }
+      } catch (Error e) {
+        warning("Search provider %s does not implement LaunchSearch, error: %s", this.id, e.message);
+      }
     }
   }
 
