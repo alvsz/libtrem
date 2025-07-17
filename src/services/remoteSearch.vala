@@ -43,14 +43,15 @@ namespace libTrem {
     private GLib.List<ResultMeta> _results;
     public GLib.List<weak ResultMeta> results { owned get { return this._results.copy(); } }
 
-    public async RemoteSearchProvider(DesktopAppInfo appInfo, string dbusName, string dbusPath, bool autostart) throws IOError {
+    public RemoteSearchProvider(DesktopAppInfo appInfo, string dbusName, string dbusPath, bool autostart) throws IOError {
       var flags = DBusProxyFlags.DO_NOT_LOAD_PROPERTIES;
       if (autostart)
         flags |= DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION;
       else
         flags |= DBusProxyFlags.DO_NOT_AUTO_START;
 
-      proxy = yield Bus.get_proxy(BusType.SESSION,dbusName,dbusPath,flags);
+      //      proxy = yield Bus.get_proxy(BusType.SESSION,dbusName,dbusPath,flags);
+      proxy = Bus.get_proxy_sync(BusType.SESSION,dbusName,dbusPath,flags);
       Object(app_info: appInfo, id: appInfo.get_id() ?? "");
     }
 
@@ -74,21 +75,11 @@ namespace libTrem {
         bool has_alpha;
         Variant data;
 
-/*
-width = v.get_child_value(1).get_int32();
-height = v.get_child_value(2).get_int32();
-rowstride = v.get_child_value(3).get_int32();
-has_alpha = v.get_child_value(4).get_boolean();
-bits_per_sample = v.get_child_value(5).get_int32();
-n_channels = v.get_child_value(6).get_int32();
-data = v.get_child_value(7).get_string();
-*/
-
 
        v.get("(iiibii@ay)", out width, out height, out rowstride, out has_alpha, out bits_per_sample, out n_channels, out data);
 //        uint8[] b = data.get_data_as_bytes().get_data();
 //        Bytes b = new Bytes.take(data);
-//        return new Gdk.Pixbuf.from_bytes(data.get_data_as_bytes(), Gdk.Colorspace.RGB,has_alpha,bits_per_sample,width,height,rowstride);
+        return new Gdk.Pixbuf.from_bytes(data.get_data_as_bytes(), Gdk.Colorspace.RGB,has_alpha,bits_per_sample,width,height,rowstride);
       }
       return null;
     }
@@ -123,11 +114,11 @@ data = v.get_child_value(7).get_string();
       this._results = (owned) metas;
     }
 
-    public void activate_result(string id, string[] query) {
+    public virtual void activate_result(string id, string[] query) {
       this.proxy.activate_result.begin(id);
     }
 
-    public void launch_search(string[] query) {
+    public virtual void launch_search(string[] query) {
       try {
         this.app_info.launch(null,null);
       } catch (Error e) { }
@@ -135,10 +126,19 @@ data = v.get_child_value(7).get_string();
   }
 
   public class RemoteSearchProvider2 : RemoteSearchProvider {
-    public async RemoteSearchProvider2(DesktopAppInfo appInfo, string dbusName, string dbusPath, bool autostart) throws IOError {
+    private IDBusSearchProvider2 proxy;
+
+    public RemoteSearchProvider2(DesktopAppInfo appInfo, string dbusName, string dbusPath, bool autostart) throws IOError {
       base(appInfo,dbusName,dbusPath,autostart);
     }
 
+    public override void activate_result(string id, string[] query) {
+      this.proxy.activate_result.begin(id, query, (uint)(GLib.get_real_time() / 1000));
+    }
+
+    public override void launch_search(string[] query) {
+      this.proxy.launch_search.begin(query,(uint)(GLib.get_real_time() / 1000));
+    }
   }
 }
 
