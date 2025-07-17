@@ -37,22 +37,24 @@ namespace libTrem {
 
   public class RemoteSearchProvider : Object {
     private IDBusSearchProvider proxy;
-    public DesktopAppInfo app_info { get; construct; }
-    public string id { get; construct; }
-    public bool default_enabled { get; construct; }
+    private DesktopAppInfo app_info;
+    public string id { get; private set; }
+    public string name { get { return this.app_info.get_name(); } }
+    public bool default_enabled; 
     private GLib.List<ResultMeta> _results;
     public GLib.List<weak ResultMeta> results { owned get { return this._results.copy(); } }
 
-    public RemoteSearchProvider(DesktopAppInfo appInfo, string dbusName, string dbusPath, bool autostart) throws IOError {
+    public RemoteSearchProvider(string desktopId, string dbusName, string dbusPath, bool autostart) throws IOError {
+      app_info = new DesktopAppInfo(desktopId);
+
       var flags = DBusProxyFlags.DO_NOT_LOAD_PROPERTIES;
       if (autostart)
         flags |= DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION;
       else
         flags |= DBusProxyFlags.DO_NOT_AUTO_START;
 
-      //      proxy = yield Bus.get_proxy(BusType.SESSION,dbusName,dbusPath,flags);
       proxy = Bus.get_proxy_sync(BusType.SESSION,dbusName,dbusPath,flags);
-      Object(app_info: appInfo, id: appInfo.get_id() ?? "");
+      id = app_info.get_id() ?? "";
     }
 
     private Icon? create_icon(HashTable<string, Variant> meta) {
@@ -77,14 +79,12 @@ namespace libTrem {
 
 
        v.get("(iiibii@ay)", out width, out height, out rowstride, out has_alpha, out bits_per_sample, out n_channels, out data);
-//        uint8[] b = data.get_data_as_bytes().get_data();
-//        Bytes b = new Bytes.take(data);
         return new Gdk.Pixbuf.from_bytes(data.get_data_as_bytes(), Gdk.Colorspace.RGB,has_alpha,bits_per_sample,width,height,rowstride);
       }
       return null;
     }
 
-    public async void search(string[] query) {
+    public async GLib.List<weak ResultMeta> search(string[] query) {
       var metas = new GLib.List<ResultMeta>();
 
       try {
@@ -112,6 +112,7 @@ namespace libTrem {
       }
 
       this._results = (owned) metas;
+      return metas.copy();
     }
 
     public virtual void activate_result(string id, string[] query) {
@@ -130,8 +131,8 @@ namespace libTrem {
   public class RemoteSearchProvider2 : RemoteSearchProvider {
     private IDBusSearchProvider2 proxy;
 
-    public RemoteSearchProvider2(DesktopAppInfo appInfo, string dbusName, string dbusPath, bool autostart) throws IOError {
-      base(appInfo,dbusName,dbusPath,autostart);
+    public RemoteSearchProvider2(string desktopId, string dbusName, string dbusPath, bool autostart) throws IOError {
+      base(desktopId,dbusName,dbusPath,autostart);
     }
 
     public override void activate_result(string id, string[] query) {
