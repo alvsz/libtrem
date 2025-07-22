@@ -3,7 +3,7 @@ namespace libTrem {
     public string id;
     public string name;
     public string description;
-    public GLib.Icon? icon;
+    public GLib.Icon? icon { get; private set; }
     public string clipboard_text;
 
     public ResultMeta(string id, string name, string description, Icon? icon, string clipboard_text) {
@@ -99,7 +99,7 @@ namespace libTrem {
     if (meta.contains("icon")) {
       var v = meta.get("icon");
       return Icon.deserialize(v);
-    } else if (meta.contains("gicon")) {
+    } else if (meta.contains("gicon") && meta.get("gicon").get_type_string() == "s") {
       var s = meta.get("gicon").get_string();
       try {
         return Icon.new_for_string(s);
@@ -148,32 +148,36 @@ namespace libTrem {
       return new RemoteSearchProvider(app_info,backend);
     }
 
-    public async GLib.List<ResultMeta> search(string[] query) {
+    public async GLib.List<ResultMeta> search(string[] query) throws Error {
       var metas = new GLib.List<ResultMeta>();
-      try {
         var r = yield backend.get_initial_result_set(query);
 
         if (r != null && r.length > 0) {
           var result_metas = yield backend.get_result_metas(r);
 
           foreach (var meta in result_metas) {
-            var clipboard = meta.contains("clipboardText") && meta.get("clipboardText").get_type() == VariantType.STRING
+            var meta_id = meta.contains("id") && meta.get("id").get_type_string() == "s"
+              ? meta.get("id").get_string()
+              : "";
+            var meta_name = meta.contains("name") && meta.get("name").get_type_string() == "s" 
+              ? meta.get("name").get_string()
+              : "";
+            var meta_description = meta.contains("description") && meta.get("description").get_type_string() == "s" 
+              ? meta.get("description").get_string()
+              : "";
+            var clipboard = meta.contains("clipboardText") && meta.get("clipboardText").get_type_string() == "s" 
               ? meta.get("clipboardText").get_string()
               : "";
 
             metas.append(new ResultMeta(
-                  meta.get("id").get_string() ?? "",
-                  meta.get("name").get_string() ?? "",
-                  meta.get("description").get_string() ?? "",
+                  meta_id,
+                  meta_name,
+                  meta_description,
                   create_icon(meta),
                   clipboard
                   ));
           }
         }
-      } catch (Error e) {
-        warning("Error from provider %s: %s", this.id, e.message);
-      }
-
       return (owned) metas;
     }
 
