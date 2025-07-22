@@ -15,6 +15,7 @@ deps = [
   dependency('astal-mpris-0.1'),
   dependency('astal-cava-0.1'),
   dependency('gdk-pixbuf-2.0'),
+  dependency('gio-unix-2.0'),
   dependency('gio-2.0')
 ]
 

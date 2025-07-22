@@ -34,6 +34,67 @@ namespace libTrem {
       public abstract async void launch_search(string[] terms, uint timestamp) throws DBusError, IOError;
     }
 
+  public interface SearchProviderBackend : Object {
+    public abstract async string[] get_initial_result_set(string[] terms) throws Error;
+    public abstract async HashTable<string, Variant>[] get_result_metas(string[] ids) throws Error;
+    public abstract void activate_result(string id, string[] terms);
+    public abstract void launch_search(string[] terms) throws Error;
+  }
+
+  public class DBusSearchProviderBackend : Object, SearchProviderBackend {
+    private IDBusSearchProvider proxy;
+
+    public DBusSearchProviderBackend(string bus_name, string object_path, bool autostart) throws Error {
+      var flags = DBusProxyFlags.DO_NOT_LOAD_PROPERTIES;
+      flags |= autostart ? DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION : DBusProxyFlags.DO_NOT_AUTO_START;
+
+      proxy = Bus.get_proxy_sync(BusType.SESSION, bus_name, object_path, flags);
+    }
+
+    public async string[] get_initial_result_set(string[] terms) throws Error {
+      return yield proxy.get_initial_result_set(terms);
+    }
+
+    public async HashTable<string, Variant>[] get_result_metas(string[] ids) throws Error {
+      return yield proxy.get_result_metas(ids);
+    }
+
+    public void activate_result(string id, string[] terms) {
+      proxy.activate_result.begin(id);
+    }
+
+    public void launch_search(string[] terms) throws Error {
+      throw new IOError.NOT_SUPPORTED("");
+    }
+  }
+
+  public class DBusSearchProvider2Backend : Object, SearchProviderBackend {
+    private IDBusSearchProvider2 proxy;
+
+    public DBusSearchProvider2Backend(string bus_name, string object_path, bool autostart) throws Error {
+      var flags = DBusProxyFlags.DO_NOT_LOAD_PROPERTIES;
+      flags |= autostart ? DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION : DBusProxyFlags.DO_NOT_AUTO_START;
+
+      proxy = Bus.get_proxy_sync(BusType.SESSION, bus_name, object_path, flags);
+    }
+
+    public async string[] get_initial_result_set(string[] terms) throws Error {
+      return yield proxy.get_initial_result_set(terms);
+    }
+
+    public async HashTable<string, Variant>[] get_result_metas(string[] ids) throws Error {
+      return yield proxy.get_result_metas(ids);
+    }
+
+    public void activate_result(string id, string[] terms) {
+      proxy.activate_result.begin(id, terms, (uint)(GLib.get_real_time() / 1000));
+    }
+
+    public void launch_search(string[] terms) throws Error {
+      proxy.launch_search.begin(terms, (uint)(GLib.get_real_time() / 1000));
+    }
+  }
+
   internal Icon? create_icon(HashTable<string, Variant> meta) {
     if (meta.contains("icon")) {
       var v = meta.get("icon");
@@ -62,119 +123,73 @@ namespace libTrem {
   }
 
   public class RemoteSearchProvider : Object {
-    private IDBusSearchProvider proxy { get; private set; }
-
-    private DesktopAppInfo app_info;
+    private SearchProviderBackend backend;
+    public DesktopAppInfo app_info { get; private set; }
     public string id { get; private set; }
     public string name { get { return this.app_info.get_name(); } }
+    public Icon? icon { get { return this.app_info.get_icon(); } }
     public bool default_enabled { get; set; }
 
-    public RemoteSearchProvider(string desktopId, string dbusName, string dbusPath, bool autostart) throws IOError {
-      app_info = new DesktopAppInfo(desktopId);
-
-      var flags = DBusProxyFlags.DO_NOT_LOAD_PROPERTIES;
-      if (autostart)
-        flags |= DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION;
-      else
-        flags |= DBusProxyFlags.DO_NOT_AUTO_START;
-
-      proxy = Bus.get_proxy_sync(BusType.SESSION,dbusName,dbusPath,flags);
-      id = app_info.get_id() ?? "";
+    public RemoteSearchProvider(DesktopAppInfo app_info, SearchProviderBackend backend) {
+      this.app_info = app_info;
+      this.backend = backend;
+      this.id = app_info.get_id() ?? "";
     }
 
-    public virtual async GLib.List<ResultMeta> search(string[] query) {
-      var metas = new GLib.List<ResultMeta>();
+    public static RemoteSearchProvider new_v1(string desktopId, string dbusName, string dbusPath, bool autostart) throws Error {
+      var app_info = new DesktopAppInfo(desktopId);
+      var backend = new DBusSearchProviderBackend(dbusName,dbusPath,autostart);
+      return new RemoteSearchProvider(app_info,backend);
+    }
 
+    public static RemoteSearchProvider new_v2(string desktopId, string dbusName, string dbusPath, bool autostart) throws Error {
+      var app_info = new DesktopAppInfo(desktopId);
+      var backend = new DBusSearchProvider2Backend(dbusName,dbusPath,autostart);
+      return new RemoteSearchProvider(app_info,backend);
+    }
+
+    public async GLib.List<ResultMeta> search(string[] query) {
+      var metas = new GLib.List<ResultMeta>();
       try {
-        var r = yield this.proxy.get_initial_result_set(query);
+        var r = yield backend.get_initial_result_set(query);
 
         if (r != null && r.length > 0) {
-          try {
-            var result_metas = yield this.proxy.get_result_metas(r);
+          var result_metas = yield backend.get_result_metas(r);
 
-            foreach (var meta in result_metas) {
-              var rm = new ResultMeta( meta.get("id").get_string() ?? "",
+          foreach (var meta in result_metas) {
+            var clipboard = meta.contains("clipboardText") && meta.get("clipboardText").get_type() == VariantType.STRING
+              ? meta.get("clipboardText").get_string()
+              : "";
+
+            metas.append(new ResultMeta(
+                  meta.get("id").get_string() ?? "",
                   meta.get("name").get_string() ?? "",
                   meta.get("description").get_string() ?? "",
                   create_icon(meta),
-                  meta.get("clipboardText").get_string() ?? "" );
-              metas.append(rm);
-            }
-          } catch (Error e) {
-            warning("Received error from D-Bus search provider %s during GetResultMetas: %s", this.id,e.message);
+                  clipboard
+                  ));
           }
-
         }
       } catch (Error e) {
-        warning("Received error from D-Bus search provider %s: %s", this.id,e.message);
+        warning("Error from provider %s: %s", this.id, e.message);
       }
 
-      return (owned)metas;
+      return (owned) metas;
     }
 
-    public virtual void activate_result(string id, string[] query) {
-      this.proxy.activate_result.begin(id);
+    public void activate_result(string id, string[] query) {
+      backend.activate_result(id, query);
     }
 
-    public virtual void launch_search(string[] query) {
+    public void launch_search(string[] query) {
       try {
-        this.app_info.launch(null,null);
+        backend.launch_search(query);
       } catch (Error e) {
-        warning("Search provider %s does not implement LaunchSearch, error: %s", this.id, e.message);
+        warning("Search provider %s does not implement LaunchSearch", this.id);
+        try {
+          this.app_info.launch(null,null);
+        } catch {}
       }
-    }
-  }
-
-  public class RemoteSearchProvider2 : RemoteSearchProvider {
-    private new IDBusSearchProvider2 proxy;
-
-    public RemoteSearchProvider2(string desktopId, string dbusName, string dbusPath, bool autostart) throws IOError {
-      var flags = DBusProxyFlags.DO_NOT_LOAD_PROPERTIES;
-      if (autostart)
-        flags |= DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION;
-      else
-        flags |= DBusProxyFlags.DO_NOT_AUTO_START;
-
-      base(desktopId,dbusName,dbusPath,autostart);
-      proxy = Bus.get_proxy_sync(BusType.SESSION,dbusName,dbusPath,flags);
-    }
-
-    public override async GLib.List<ResultMeta> search(string[] query) {
-      var metas = new GLib.List<ResultMeta>();
-
-      try {
-        var r = yield this.proxy.get_initial_result_set(query);
-
-        if (r != null && r.length > 0) {
-          try {
-            var result_metas = yield this.proxy.get_result_metas(r);
-
-            foreach (var meta in result_metas) {
-              var rm = new ResultMeta( meta.get("id").get_string() ?? "",
-                  meta.get("name").get_string() ?? "",
-                  meta.get("description").get_string() ?? "",
-                  create_icon(meta),
-                  meta.get("clipboardText").get_string() ?? "" );
-              metas.append(rm);
-            }
-          } catch (Error e) {
-            warning("Received error from D-Bus search provider %s during GetResultMetas: %s", this.id,e.message);
-          }
-
-        }
-      } catch (Error e) {
-        warning("Received error from D-Bus search provider %s: %s", this.id,e.message);
-      }
-
-      return (owned)metas;
-    }
-
-    public override void activate_result(string id, string[] query) {
-      this.proxy.activate_result.begin(id, query, (uint)(GLib.get_real_time() / 1000));
-    }
-
-    public override void launch_search(string[] query) {
-      this.proxy.launch_search.begin(query,(uint)(GLib.get_real_time() / 1000));
     }
   }
 }
