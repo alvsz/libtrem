@@ -49,6 +49,7 @@ namespace libTrem {
       flags |= autostart ? DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION : DBusProxyFlags.DO_NOT_AUTO_START;
 
       proxy = Bus.get_proxy_sync(BusType.SESSION, bus_name, object_path, flags);
+      proxy.set_default_timeout(50);
     }
 
     public async string[] get_initial_result_set(string[] terms) throws Error {
@@ -76,6 +77,7 @@ namespace libTrem {
       flags |= autostart ? DBusProxyFlags.DO_NOT_AUTO_START_AT_CONSTRUCTION : DBusProxyFlags.DO_NOT_AUTO_START;
 
       proxy = Bus.get_proxy_sync(BusType.SESSION, bus_name, object_path, flags);
+      proxy.set_default_timeout(50);
     }
 
     public async string[] get_initial_result_set(string[] terms) throws Error {
