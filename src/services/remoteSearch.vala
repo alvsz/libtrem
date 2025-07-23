@@ -152,34 +152,34 @@ namespace libTrem {
 
     public async GLib.List<ResultMeta> search(string[] query) throws Error {
       var metas = new GLib.List<ResultMeta>();
-        var r = yield backend.get_initial_result_set(query);
+      var r = yield backend.get_initial_result_set(query);
 
-        if (r != null && r.length > 0) {
-          var result_metas = yield backend.get_result_metas(r);
+      if (r != null && r.length > 0) {
+        var result_metas = yield backend.get_result_metas(r);
 
-          foreach (var meta in result_metas) {
-            var meta_id = meta.contains("id") && meta.get("id").get_type_string() == "s"
-              ? meta.get("id").get_string()
-              : "";
-            var meta_name = meta.contains("name") && meta.get("name").get_type_string() == "s" 
-              ? meta.get("name").get_string()
-              : "";
-            var meta_description = meta.contains("description") && meta.get("description").get_type_string() == "s" 
-              ? meta.get("description").get_string()
-              : "";
-            var clipboard = meta.contains("clipboardText") && meta.get("clipboardText").get_type_string() == "s" 
-              ? meta.get("clipboardText").get_string()
-              : "";
+        foreach (var meta in result_metas) {
+          var meta_id = meta.contains("id") && meta.get("id").get_type_string() == "s"
+            ? meta.get("id").get_string()
+            : "";
+          var meta_name = meta.contains("name") && meta.get("name").get_type_string() == "s" 
+            ? meta.get("name").get_string()
+            : "";
+          var meta_description = meta.contains("description") && meta.get("description").get_type_string() == "s" 
+            ? meta.get("description").get_string()
+            : "";
+          var clipboard = meta.contains("clipboardText") && meta.get("clipboardText").get_type_string() == "s" 
+            ? meta.get("clipboardText").get_string()
+            : "";
 
-            metas.append(new ResultMeta(
-                  meta_id,
-                  meta_name,
-                  meta_description,
-                  create_icon(meta),
-                  clipboard
-                  ));
-          }
+          metas.append(new ResultMeta(
+                meta_id,
+                meta_name,
+                meta_description,
+                create_icon(meta),
+                clipboard
+                ));
         }
+      }
       return (owned) metas;
     }
 
