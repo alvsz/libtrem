@@ -16,14 +16,18 @@ deps = [
   dependency('astal-cava-0.1'),
   dependency('gdk-pixbuf-2.0'),
   dependency('gio-unix-2.0'),
-  dependency('gio-2.0')
+  dependency('gio-2.0'),
+  dependency('libnm'),
+  dependency('libsecret-1')
 ]
 
 vala_services = [
   'services/weather.vala',
   'services/evolutionDataServer.vala',
   'services/calendar.vala',
-  'services/remoteSearch.vala'
+  'services/remoteSearch.vala',
+  'services/networkAgent.vala',
+  'services/nm-secret-utils.vala',
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
