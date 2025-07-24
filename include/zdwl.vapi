@@ -1,13 +1,9 @@
-/*
- * Vala bindings for the dwl-ipc Wayland protocol.
- * Gerado a partir de dwl-ipc-client-protocol.h
- */
-[CCode (cheader_filename = "dwl-ipc-client-protocol.h")]
+[CCode (cheader_filename = "dwl-ipc-client-protocol.h,wayland-client.h")]
 namespace zdwl {
     [CCode (has_target = false, has_typedef = false)]
 	public delegate void IpcListenerFrame (void *data, Ipc ipc);
     [CCode (has_target = false, has_typedef = false)]
-	public delegate void IpcListenerMonitorAdded (void *data, Ipc ipc, string addess);
+	public delegate void IpcListenerMonitorAdded (void *data, Ipc ipc, string address);
     [CCode (has_target = false, has_typedef = false)]
 	public delegate void IpcListenerMonitorRemoved (void *data, Ipc ipc, string address);
     [CCode (has_target = false, has_typedef = false)]
@@ -18,8 +14,6 @@ namespace zdwl {
 	public delegate void IpcListenerClientTitleChanged (void *data, Ipc ipc, string address);
     [CCode (has_target = false, has_typedef = false)]
 	public delegate void IpcListenerClientStateChanged (void *data, Ipc ipc, string address);
-
-
 
     [CCode (cname = "struct dwl_ipc_listener")]
     public struct IpcListener {
@@ -35,9 +29,10 @@ namespace zdwl {
     [Compact]
     [CCode (cname = "struct dwl_ipc", free_function = "dwl_ipc_destroy")]
     public class Ipc : Wl.Proxy {
-        [CCode (cname = "dwl_ipc_interface")]
+        [CCode (cname = "(&dwl_ipc_interface)")]
         public static Wl.Interface interface;
 
+        [CCode (cname = "dwl_ipc_add_listener")]
         public int add_listener (IpcListener listener, void* data);
         /*
         public void set_user_data (void* user_data);

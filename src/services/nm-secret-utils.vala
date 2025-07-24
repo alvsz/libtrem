@@ -21,4 +21,11 @@ namespace libTrem {
                 AsyncResult result
                 ) throws GLib.Error;
 
+    [CCode (cheader_filename = "wayland-client.h", cname = "wl_registry_bind")]
+        extern static void* wl_registry_bind (
+                Wl.Registry registry,
+                uint32 name,
+                Wl.Interface interface,
+                uint32 version
+        );
 }

@@ -1,8 +1,8 @@
 wayland_scanner = find_program('wayland-scanner')
 
-dwl_ipc_header = custom_target('dwl-ipc-protocol.h',
+dwl_ipc_header = custom_target('dwl-ipc-client-protocol.h',
   input: './dwl-ipc.xml',
-  output: 'dwl-ipc-protocol.h',
+  output: 'dwl-ipc-client-protocol.h',
   command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@']
 )
 
