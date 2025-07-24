@@ -26,7 +26,8 @@ vala_services = [
   'services/evolutionDataServer.vala',
   'services/calendar.vala',
   'services/remoteSearch.vala',
-  'services/networkAgent.vala'
+  'services/networkAgent.vala',
+  'services/nm-secret-utils.vala',
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
