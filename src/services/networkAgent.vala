@@ -31,15 +31,19 @@ namespace libTrem {
       public string[] hints;
       public NM.SecretAgentGetSecretsFlags flags;
       public NM.SecretAgentOldGetSecretsFunc callback;
-      public void* callback_data;
 
       public VariantDict entries;
       public VariantBuilder builder_vpn;
 
-      public AgentRequest(NetworkAgent self) {
+      public AgentRequest(NetworkAgent self, string request_id, NM.Connection connection, string setting_name, string[] hints, NM.SecretAgentGetSecretsFlags flags, NM.SecretAgentOldGetSecretsFunc callback) {
           this.self = self;
-          this.builder_vpn = new VariantBuilder(new VariantType("a{sv}"));
+          this.builder_vpn = new VariantBuilder(new VariantType("a{ss}"));
           this.entries = new VariantDict(null);
+          this.connection = connection;
+          this.setting_name = setting_name;
+          this.hints = hints;
+          this.flags = flags;
+          this.callback = callback;
       }
 
       ~AgentRequest() {
@@ -76,7 +80,11 @@ namespace libTrem {
     internal static string SK_TAG = "setting-key";
 
     internal HashTable<string, AgentRequest> requests;
-    public signal void new_request(string path, NM.Connection connection, string setting_name, string[] hints, int request_flags);
+    public signal void new_request(string path,
+                                   NM.Connection connection,
+                                   string setting_name,
+                                   string[] hints,
+                                   int request_flags);
     public signal void cancel_request(string path);
 
     public NetworkAgent() {
@@ -88,10 +96,18 @@ namespace libTrem {
       attributes.insert (UUID_TAG,Secret.SchemaAttributeType.STRING);
       attributes.insert (SN_TAG,Secret.SchemaAttributeType.STRING);
       attributes.insert (SK_TAG,Secret.SchemaAttributeType.STRING);
-      schema = new Secret.Schema.newv ("org.freedesktop.NetworkManager.Connection",Secret.SchemaFlags.DONT_MATCH_NAME,attributes);
+
+      schema = new Secret.Schema.newv ("org.freedesktop.NetworkManager.Connection",
+                                       Secret.SchemaFlags.DONT_MATCH_NAME,
+                                       attributes);
     }
 
-    internal HashTable<string,string> create_keyring_add_attr_list (NM.Connection connection, string connection_uuid, string connection_id, string setting_name, string setting_key, out string display_name) {
+    internal static HashTable<string,string> create_keyring_add_attr_list (NM.Connection connection,
+                                                                    string connection_uuid,
+                                                                    string connection_id,
+                                                                    string setting_name,
+                                                                    string setting_key,
+                                                                    out string display_name) {
       NM.SettingConnection s_con;
 
       if (connection != null) {
@@ -111,7 +127,7 @@ namespace libTrem {
       return Secret.attributes_build (schema, UUID_TAG, connection_uuid, SN_TAG, setting_name, SK_TAG, setting_key);
     }
 
-    internal void save_one_secret (KeyringRequest r, NM.Setting setting, string key, string secret, string display_name) {
+    internal static void save_one_secret (KeyringRequest r, NM.Setting setting, string key, string secret, string display_name) {
       string alt_display_name;
       var secret_flags = NM.SettingSecretFlags.NONE;
 
@@ -143,7 +159,67 @@ namespace libTrem {
       });
     }
 
-    public override void save_secrets (NM.Connection connection, string connection_path, NM.SecretAgentOldSaveSecretsFunc callback) {
+    internal static bool has_always_ask (NM.Setting setting) {
+      var always_ask = false;
+
+      setting.enumerate_values ((self,key,value,flags) => {
+        var secret_flags = NM.SettingSecretFlags.NONE;
+
+        try {
+          if ((flags & NM.Setting.SECRET) != 0) 
+            if (nm_setting_get_secret_flags_fixed (self,key,out secret_flags))
+              if ((secret_flags & NM.SettingSecretFlags.NOT_SAVED) != 0)
+                always_ask = true;
+        } catch (Error e) {
+          always_ask = false;
+        }
+      });
+
+      return always_ask;
+    }
+
+    internal static bool is_connection_always_ask (NM.Connection connection) {
+      var s_con = connection.get_setting_connection ();
+      assert (s_con != null);
+
+      var ctype = s_con.get_connection_type();
+      var setting = connection.get_setting_by_name(ctype);
+      return_val_if_fail (setting != null, false);
+
+      if (has_always_ask(setting)) {
+        return true;
+      }
+
+      if (setting is NM.SettingWireless) {
+        setting = connection.get_setting_wireless_security ();
+        if (setting != null && has_always_ask(setting)) {
+          return true;
+        }
+        setting = connection.get_setting_802_1x ();
+        if (setting != null && has_always_ask(setting)) {
+          return true;
+        }
+      } else if (setting is NM.SettingWired) {
+        setting = connection.get_setting_pppoe ();
+        if (setting != null && has_always_ask(setting)) {
+          return true;
+        }
+        setting = connection.get_setting_802_1x ();
+        if (setting != null && has_always_ask(setting)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    private void request_secrets_from_ui (AgentRequest request) {
+      new_request (request.request_id,request.connection,request.setting_name,request.hints,request.flags);
+    }
+
+    public override void save_secrets (NM.Connection connection,
+                                       string connection_path,
+                                       NM.SecretAgentOldSaveSecretsFunc callback) {
       var r = new KeyringRequest (this,connection,callback);
 
       base.delete_secrets (connection,connection_path,(agent,conn,err) => {
@@ -176,8 +252,75 @@ namespace libTrem {
       }); 
     }
 
-    public override void get_secrets (NM.Connection connection, string connection_path, string setting_name, string[] hints, NM.SecretAgentGetSecretsFlags flags, NM.SecretAgentOldGetSecretsFunc callback) {
+    public override void get_secrets (NM.Connection connection,
+                                      string connection_path,
+                                      string setting_name,
+                                      string[] hints,
+                                      NM.SecretAgentGetSecretsFlags flags,
+                                      NM.SecretAgentOldGetSecretsFunc callback) {
+      var request_id = "%s/%s".printf (connection_path,setting_name);
+      var request = requests.lookup (request_id);
 
+      if (request != null)
+        request.cancel ();
+
+      request = new AgentRequest (this,request_id,connection,setting_name,hints,flags,callback);
+
+      requests.replace (request_id,request);
+
+      if ((flags & NM.SecretAgentGetSecretsFlags.REQUEST_NEW) != 0 ||
+            ((flags & NM.SecretAgentGetSecretsFlags.ALLOW_INTERACTION) != 0 &&
+            is_connection_always_ask (connection)))
+        request_secrets_from_ui (request);
+
+      var attributes = Secret.attributes_build (schema,UUID_TAG,connection.get_uuid (),SN_TAG,setting_name);
+      secret_service_search (null, schema, attributes, Secret.SearchFlags.ALL | Secret.SearchFlags.UNLOCK | Secret.SearchFlags.LOAD_SECRETS, request.cancellable, (source,res) => {
+        unowned List<Secret.Item> items;
+
+        try {
+          items = secret_service_search_finish ((Secret.Service?)source, res);
+        } catch (IOError.CANCELLED e) {
+          return;
+        } catch (Error e) {
+          var error = new  NM.SecretAgentError.FAILED("Internal error while retrieving secrets from the keyring (%s)", e.message);
+          request.callback (request.self, request.connection, null, error);
+          requests.remove (request.request_id);
+          return;
+        }
+
+        VariantBuilder builder_setting = new VariantBuilder(VariantType.VARDICT);
+        bool secrets_found = false;
+
+        foreach (var item in items) {
+          var secret = item.get_secret ();
+
+          if (secret == null)
+            continue;
+
+          var attr = item.get_attributes ();
+          foreach (var name in attr.get_keys ()) {
+            if (name == SK_TAG) {
+              builder_setting.add ("{sv}",attributes[name],new Variant.variant  (secret.get_text ()));
+              secrets_found = true;
+              break;
+            }
+          }
+        }
+
+        var setting = builder_setting.end ();
+
+        if (request.setting_name == NM.SettingVpn.SETTING_NAME || (!secrets_found && ((request.flags & NM.SecretAgentGetSecretsFlags.ALLOW_INTERACTION) != 0 ))) {
+          try {
+            request.connection.update_secrets (request.setting_name, setting);
+          } catch (Error e) {}
+          request_secrets_from_ui (request);
+          return;
+        }
+
+        var builder_connection = new VariantBuilder (new VariantType (("a{sa{sv}}")));
+        builder_connection.add ("{s@a{sv}}",request.setting_name,setting);
+        request.callback (request.self, request.connection, builder_connection.end (), null);
+      });
     }
 
     public override void cancel_get_secrets (string connection_path, string setting_name) {
