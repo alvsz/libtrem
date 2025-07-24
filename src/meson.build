@@ -29,6 +29,7 @@ vala_services = [
   'services/remoteSearch.vala',
   'services/networkAgent.vala',
   'services/nm-secret-utils.vala',
+  'services/dwl.vala',
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
@@ -45,6 +46,9 @@ lib = library(
   meson.project_name(),
   libtrem_sources + vala_services + vala_widgets + dwl_ipc,
   dependencies: deps,
+  vala_args: ['--vapidir=' + meson.project_source_root() + '/include',
+    '--pkg=zdwl'
+  ],
   vala_header: meson.project_name() + '.h',
   vala_vapi: meson.project_name() + '-' + api_version + '.vapi',
   vala_gir: gir,
