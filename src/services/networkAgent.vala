@@ -303,51 +303,56 @@ namespace libTrem {
       var attributes = Secret.attributes_build (schema,UUID_TAG,connection.get_uuid (),SN_TAG,setting_name);
       AgentRequest request_ref = (AgentRequest)request_new.ref ();
 
-      unowned List<Secret.Item> items;
-      try {
-        items = secret_service_search_sync (null, schema, attributes, Secret.SearchFlags.ALL | Secret.SearchFlags.UNLOCK | Secret.SearchFlags.LOAD_SECRETS, request_ref.cancellable);
-      } catch (IOError.CANCELLED e) {
-        return;
-      } catch (Error e) {
-        var error = new  NM.SecretAgentError.FAILED("Internal error while retrieving secrets from the keyring (%s)", e.message);
-        request_ref.callback (request_ref.self, request_ref.connection, null, error);
-        requests.remove (request_ref.request_id);
-        return;
-      }
-      VariantBuilder builder_setting = new VariantBuilder(VariantType.VARDICT);
-      bool secrets_found = false;
 
-      foreach (var item in items) {
-        var secret = item.get_secret ();
+      secret_service_search.begin (null, schema, attributes, Secret.SearchFlags.ALL | Secret.SearchFlags.UNLOCK | Secret.SearchFlags.LOAD_SECRETS, request_ref.cancellable, (source, res) => {
+        unowned List<Secret.Item> items;
+          
+        try {
+          items = secret_service_search_finish ((Secret.Service)source, res);
+          printerr ("sync terminou %u\n", items.length ());
+        } catch (IOError.CANCELLED e) {
+          return;
+        } catch (Error e) {
+          var error = new  NM.SecretAgentError.FAILED("Internal error while retrieving secrets from the keyring (%s)", e.message);
+          request_ref.callback (request_ref.self, request_ref.connection, null, error);
+          requests.remove (request_ref.request_id);
+          return;
+        }
+        VariantBuilder builder_setting = new VariantBuilder(VariantType.VARDICT);
+        bool secrets_found = false;
 
-        if (secret == null)
-          continue;
+        foreach (var item in items) {
+          var secret = item.get_secret ();
 
-        var attr = item.get_attributes ();
-        foreach (var name in attr.get_keys ()) {
-          if (name == SK_TAG) {
-            builder_setting.add ("{sv}",attributes[name],new Variant.variant  (secret.get_text ()));
-            secrets_found = true;
-            break;
+          if (secret == null)
+            continue;
+
+          var attr = item.get_attributes ();
+          foreach (var name in attr.get_keys ()) {
+            if (name == SK_TAG) {
+              builder_setting.add ("{sv}",attributes[name],new Variant.variant  (secret.get_text ()));
+              secrets_found = true;
+              break;
+            }
           }
         }
-      }
 
-      var setting = builder_setting.end ();
+        var setting = builder_setting.end ();
 
-      if (request_ref.setting_name == NM.SettingVpn.SETTING_NAME || (!secrets_found && ((request_ref.flags & NM.SecretAgentGetSecretsFlags.ALLOW_INTERACTION) != 0 ))) {
-        try {
-          request_ref.connection.update_secrets (request_ref.setting_name, setting);
-        } catch (Error e) {}
-        request_secrets_from_ui (request_ref);
-        return;
-      }
+        if (request_ref.setting_name == NM.SettingVpn.SETTING_NAME || (!secrets_found && ((request_ref.flags & NM.SecretAgentGetSecretsFlags.ALLOW_INTERACTION) != 0 ))) {
+          try {
+            request_ref.connection.update_secrets (request_ref.setting_name, setting);
+          } catch (Error e) {}
+          request_secrets_from_ui (request_ref);
+          return;
+        }
 
-      var builder_connection = new VariantBuilder (new VariantType (("a{sa{sv}}")));
-      builder_connection.add ("{s@a{sv}}",request_ref.setting_name,setting);
-      request_ref.callback (request_ref.self, request_ref.connection, builder_connection.end (), null);
+        var builder_connection = new VariantBuilder (new VariantType (("a{sa{sv}}")));
+        builder_connection.add ("{s@a{sv}}",request_ref.setting_name,setting);
+        request_ref.callback (request_ref.self, request_ref.connection, builder_connection.end (), null);
 
-      request_ref.unref ();
+        request_ref.unref ();
+      });
     }
 
     public override void cancel_get_secrets (string connection_path, string setting_name) {
