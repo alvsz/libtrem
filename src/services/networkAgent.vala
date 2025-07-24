@@ -21,6 +21,12 @@
 
 [CCode (cheader_filename = "NetworkManager.h,nm-secret-agent-old.h")]
 namespace libTrem {
+  public enum NetworkAgentResponse {
+    CONFIRMED,
+    USER_CANCELED,
+    INTERNAL_ERROR
+  }
+
   public class AgentRequest : Object {
       public Cancellable? cancellable;
       public NetworkAgent self;
@@ -44,10 +50,6 @@ namespace libTrem {
           this.hints = hints;
           this.flags = flags;
           this.callback = callback;
-      }
-
-      ~AgentRequest() {
-          // liberação implícita pela GC
       }
 
       public void cancel() {
@@ -79,7 +81,7 @@ namespace libTrem {
     internal static string SN_TAG = "setting-name";
     internal static string SK_TAG = "setting-key";
 
-    internal HashTable<string, AgentRequest> requests;
+    internal HashTable<string, AgentRequest> requests = new HashTable<string, AgentRequest>(str_hash, str_equal);
     public signal void new_request(string path,
                                    NM.Connection connection,
                                    string setting_name,
@@ -87,8 +89,11 @@ namespace libTrem {
                                    int request_flags);
     public signal void cancel_request(string path);
 
-    public NetworkAgent() {
-
+    ~NetworkAgent() {
+      requests.foreach ((id, request) => {
+        var err = new NM.SecretAgentError.AGENTCANCELED ("The secret agent is going away");
+        request.callback (this, request.connection, null, err);
+      });
     }
 
     static construct {
@@ -353,7 +358,76 @@ namespace libTrem {
             callback(this,connection,err);
           }
         });
+    }
 
+    public void add_vpn_secret (string request_id, string setting_key, string setting_value) {
+      return_if_fail (this is NetworkAgent);
+
+      var request = requests.lookup (request_id);
+      return_if_fail (request != null);
+
+      request.builder_vpn.add ("{ss}", setting_key, setting_value);  
+    }
+
+    public void set_password (string request_id, string setting_key, string setting_value) {
+      return_if_fail (this is NetworkAgent);
+
+      var request = requests.lookup (request_id);
+      return_if_fail (request != null);
+
+      request.entries.insert (setting_key, "s", setting_value);
+    }
+
+    public void respond (string request_id, NetworkAgentResponse response) {
+      return_if_fail (this is NetworkAgent);
+
+      var request = requests.lookup (request_id);
+      return_if_fail (request != null);
+
+      if (response == NetworkAgentResponse.USER_CANCELED) {
+        var error = new NM.SecretAgentError.USERCANCELED("Network dialog was canceled by the user");
+        request.callback(this,request.connection,null,error);
+        requests.remove (request_id);
+        return;
+      }
+
+      if (response == NetworkAgentResponse.INTERNAL_ERROR) {
+        var error = new NM.SecretAgentError.FAILED("An internal error occurred while processing the request.");
+        request.callback(this,request.connection,null,error);
+        requests.remove (request_id);
+        return;
+      }
+
+      var vpn_secrets = request.builder_vpn.end ();
+
+      if (vpn_secrets.n_children () > 0)
+        request.entries.insert_value (NM.SettingVpn.SECRETS, vpn_secrets);
+
+      var setting = request.entries.end ();
+      
+      if ((request.flags & NM.SecretAgentGetSecretsFlags.ALLOW_INTERACTION) != 0 || (request.flags & NM.SecretAgentGetSecretsFlags.REQUEST_NEW) != 0) {
+        var dup = NM.SimpleConnection.new_clone (request.connection);
+        try {
+          dup.update_secrets (request.setting_name, setting);
+          base.save_secrets (dup,null,null);
+        } catch (Error e) {}
+      }
+
+      var builder_connection = new VariantBuilder (new VariantType (("a{sa{sv}}")));
+      builder_connection.add ("{s@a{sv}}", request.setting_name, setting);
+
+      request.callback (this, request.connection, builder_connection.end (), null);
+
+      requests.remove (request_id);
+    }
+
+    public NM.VpnPluginInfo search_vpn_plugin (string service) throws Error {
+      var info = new NM.VpnPluginInfo.search_file (null, service);
+
+      if (info != null)
+        return info;
+      else
+        throw new IOError.NOT_FOUND ("No plugin for %s", service);
     }
   }
 }
