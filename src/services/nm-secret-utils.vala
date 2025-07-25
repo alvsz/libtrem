@@ -35,18 +35,4 @@ namespace libTrem {
                 ref Wl.RegistryListener listener,
                 void *data
         );
-
-    [CCode (cheader_filename = "dwl-ipc-client-protocol.h", cname = "dwl_ipc_add_listener")]
-        extern static int dwl_ipc_add_listener (
-                zdwl.Ipc ipc,
-                ref zdwl.IpcListener listener,
-                void *data
-        );
-
-    [CCode (cheader_filename = "dwl-ipc-client-protocol.h", cname = "dwl_command_add_listener")]
-        extern static int dwl_command_add_listener (
-                zdwl.Command command,
-                ref zdwl.CommandListener listener,
-                void *data
-        );
 }

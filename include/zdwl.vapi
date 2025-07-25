@@ -33,12 +33,8 @@ namespace zdwl {
         public static Wl.Interface interface;
 
         [CCode (cname = "dwl_ipc_add_listener")]
-        public int add_listener (IpcListener listener, void* data);
-        /*
-        public void set_user_data (void* user_data);
-        public void* get_user_data ();
-        public uint32 get_version ();
-        */
+        public int add_listener (ref IpcListener listener, void* data);
+        [CCode (cname = "dwl_ipc_eval")]
         public Command eval (string command);
     }
 
@@ -62,6 +58,7 @@ namespace zdwl {
         [CCode (cname = "(&dwl_command_interface)")]
         public static Wl.Interface interface;
 
-        public int add_listener (CommandListener listener, void* data);
+        [CCode (cname = "dwl_command_add_listener")]
+        public int add_listener (ref CommandListener listener, void* data);
     }
 }

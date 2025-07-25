@@ -4,74 +4,76 @@ namespace libTrem {
     assert_nonnull (self);
 
     if (interface == zdwl.Ipc.interface.name) {
-      printerr ("achou a interface!!!\n");
       self.ipc = (zdwl.Ipc)wl_registry_bind (registry,name,zdwl.Ipc.interface,version);
     }
   }
 
   internal static void global_remove (void *data, Wl.Registry registry, uint32 name) {
-    DwlIpc self = (DwlIpc)data;
-    printerr ("protocolo sumiu: %u\n",  name);
   }
 
   internal static void on_frame (void *data, zdwl.Ipc ipc) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("frame\n");
-
+    return_if_fail (self != null);
     self.frame ();
   }
 
   internal static void on_monitor_added (void *data, zdwl.Ipc ipc, string address) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("monitor_added: %s\n", address);
+    return_if_fail (self != null);
     self.monitor_added (address);
   }
 
   internal static void on_monitor_removed (void *data, zdwl.Ipc ipc, string address) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("monitor_removed: %s\n", address);
+    return_if_fail (self != null);
     self.monitor_removed (address);
   }
 
   internal static void on_client_opened (void *data, zdwl.Ipc ipc, string address) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("client_opened: %s\n", address);
+    return_if_fail (self != null);
     self.client_opened (address);
   }
 
   internal static void on_client_closed (void *data, zdwl.Ipc ipc, string address) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("client_closed: %s\n", address);
+    return_if_fail (self != null);
     self.client_closed (address);
   }
 
   internal static void on_client_title_changed (void *data, zdwl.Ipc ipc, string address) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("client_title_changed: %s\n", address);
+    return_if_fail (self != null);
     self.client_title_changed (address);
   }
 
   internal static void on_client_state_changed (void *data, zdwl.Ipc ipc, string address) {
     DwlIpc self = (DwlIpc)data;
-    assert_nonnull (self);
-    printerr ("client_state_changed: %s\n", address);
+    return_if_fail (self != null);
     self.client_state_changed (address);
   }
 
-  public class DwlCommand : Object {
+  internal static void on_command_done (void *data, zdwl.Command command, zdwl.CommandError error, string message) {
+    DwlCommand self = (DwlCommand)data;
+    return_if_fail (self != null);
+    self.done (error, message);
+  }
 
+  public class DwlCommand : Object {
+    internal unowned zdwl.Command command;
+    public signal void done(uint error, string message);
+
+    public DwlCommand (zdwl.Command cmd) {
+      this.command = cmd;
+    }
   }
 
   public class DwlIpc : Object {
     private WlSource wl_source;
     private unowned Wl.Display display;
     public unowned zdwl.Ipc? ipc;
+
+    private List<zdwl.Command> commands;
 
     public signal void frame();
     public signal void monitor_added(string address);
@@ -83,9 +85,9 @@ namespace libTrem {
 
     private static zdwl.IpcListener dwl_listener;
     private static Wl.RegistryListener global_listener;
+    private static zdwl.CommandListener dwl_command_listener;
 
     private static DwlIpc _instance;
-
 
     public DwlIpc() {
       Object();
@@ -103,14 +105,15 @@ namespace libTrem {
       display.roundtrip ();
       assert_nonnull (ipc);
 
-      dwl_ipc_add_listener (ipc, ref dwl_listener, this);
+      ipc.add_listener (ref dwl_listener, this);
 
       display.roundtrip ();
     }
 
     static construct {
-      global_listener = new Wl.RegistryListener () {};
-      dwl_listener = new zdwl.IpcListener () {};
+      global_listener = Wl.RegistryListener () ;
+      dwl_listener = zdwl.IpcListener ();
+      dwl_command_listener = zdwl.CommandListener ();
 
       global_listener.global = global_add;
       global_listener.global_remove = global_remove;
@@ -122,6 +125,8 @@ namespace libTrem {
       dwl_listener.client_closed = on_client_closed;
       dwl_listener.client_title_changed = on_client_title_changed;
       dwl_listener.client_state_changed = on_client_state_changed;
+
+      dwl_command_listener.done = on_command_done;
     }
 
     public static DwlIpc? get_default() {
@@ -129,6 +134,18 @@ namespace libTrem {
         _instance = new DwlIpc();
 
       return _instance;
+    }
+
+    public DwlCommand run_command (string command) {
+      commands.append (this.ipc.eval(command));
+      var a = new DwlCommand (commands.last ().data);
+      a.command.add_listener (ref dwl_command_listener, a);
+
+      a.done.connect (() => {
+        commands.remove (a.command);
+      });
+
+      return a;
     }
   }
 
