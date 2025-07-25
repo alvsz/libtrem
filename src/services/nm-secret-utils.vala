@@ -29,9 +29,24 @@ namespace libTrem {
                 uint32 version
         );
 
-    [CCode (cheader_filename = "dwl-helper.h", cname="get_global_listener", has_target = false)]
-        extern static Wl.RegistryListener* get_global_listener();
+    [CCode (cheader_filename = "wayland-client.h", cname = "wl_registry_add_listener")]
+        extern static int wl_registry_add_listener (
+                Wl.Registry registry,
+                ref Wl.RegistryListener listener,
+                void *data
+        );
 
-    [CCode (cheader_filename = "dwl-helper.h", cname="get_dwl_listener", has_target = false)]
-        extern static zdwl.IpcListener* get_dwl_listener();
+    [CCode (cheader_filename = "dwl-ipc-client-protocol.h", cname = "dwl_ipc_add_listener")]
+        extern static int dwl_ipc_add_listener (
+                zdwl.Ipc ipc,
+                ref zdwl.IpcListener listener,
+                void *data
+        );
+
+    [CCode (cheader_filename = "dwl-ipc-client-protocol.h", cname = "dwl_command_add_listener")]
+        extern static int dwl_command_add_listener (
+                zdwl.Command command,
+                ref zdwl.CommandListener listener,
+                void *data
+        );
 }

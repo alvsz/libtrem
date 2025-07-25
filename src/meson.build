@@ -47,7 +47,6 @@ lib = library(
   meson.project_name(),
   libtrem_sources + vala_services + vala_widgets + dwl_ipc,
   dependencies: deps,
-  include_directories: include_directories('../include'),
   vala_args: ['--vapidir=' + meson.project_source_root() + '/include',
     '--pkg=zdwl'
   ],
