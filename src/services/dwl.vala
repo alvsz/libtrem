@@ -4,7 +4,6 @@ namespace libTrem {
     internal static void global_add (void *data, Wl.Registry registry, uint32 name, string interface, uint32 version) {
       DwlIpc self = (DwlIpc)data;
       assert_nonnull (self);
-      //printerr ("novo protocolo: %s %u v%u\n", interface, name, version);
 
       if (interface == zdwl.Ipc.interface.name) {
         printerr ("achou a interface!!!\n");
@@ -94,13 +93,15 @@ namespace libTrem {
     public signal void client_title_changed(string address);
     public signal void client_state_changed(string address);
 
-    internal static zdwl.IpcListener* dwl_listener;
-    internal static Wl.RegistryListener* global_listener;
+    private zdwl.IpcListener* dwl_listener;
+    private Wl.RegistryListener* global_listener;
 
     private static DwlIpc _instance;
 
 
     public DwlIpc() throws Error {
+      dwl_listener = get_dwl_listener ();
+      global_listener = get_global_listener ();
       display = new Wl.Display.connect (null);
       var registry = display.get_registry ();
 
@@ -114,19 +115,25 @@ namespace libTrem {
       ipc.add_listener (*dwl_listener, this);
       
       display.roundtrip ();
-      display.dispatch ();
 
 /*
-      while (display.dispatch () != -1)
-        continue;
-      */
+      var a = new Task (this,null,() => {
+        printerr ("display morreu!!!\n");
+      });
+      a.set_task_data (display,null);
+      a.run_in_thread ((a,b,c,d) => {
+        unowned Wl.Display e = (Wl.Display)c;
+        while (e.dispatch () != -1)
+          continue;
+      });
+*/
 
 /*
       */
       fd = display.get_fd ();
       channel = new IOChannel.unix_new (fd);
       watch_id = channel.add_watch (IOCondition.IN,(source, condition) => {
-        printerr ("coisou aqui\n");
+        printerr ("coisou aqui, %p %p\n", global_listener, dwl_listener);
         var ret = display.dispatch ();
         if (ret == -1) {
           warning ("disconnected from wayland display");
@@ -147,10 +154,10 @@ namespace libTrem {
     }
 
     static construct {
-      global_listener = get_global_listener ();
-      dwl_listener = get_dwl_listener ();
-
     /*
+      global_listener = new Wl.RegistryListener () {};
+      dwl_listener = new zdwl.IpcListener () {};
+
       global_listener.global = global_add;
       global_listener.global_remove = global_remove;
 
