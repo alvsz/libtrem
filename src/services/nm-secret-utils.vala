@@ -28,4 +28,10 @@ namespace libTrem {
                 Wl.Interface interface,
                 uint32 version
         );
+
+    [CCode (cheader_filename = "dwl-helper.h", cname="get_global_listener", has_target = false)]
+        extern static Wl.RegistryListener* get_global_listener();
+
+    [CCode (cheader_filename = "dwl-helper.h", cname="get_dwl_listener", has_target = false)]
+        extern static zdwl.IpcListener* get_dwl_listener();
 }

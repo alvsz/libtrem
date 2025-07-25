@@ -19,7 +19,7 @@
  *
  */
 
-[CCode (cheader_filename = "NetworkManager.h,nm-secret-agent-old.h,libsecret/secret.h")]
+[CCode (cheader_filename = "NetworkManager.h,nm-secret-agent-old.h,libsecret/secret.h,dwl-helper.h")]
 namespace libTrem {
   public enum NetworkAgentResponse {
     CONFIRMED,
