@@ -36,7 +36,7 @@ namespace libTrem {
     public string setting_name;
     public List<string> hints;
     public NM.SecretAgentGetSecretsFlags flags;
-    public NM.SecretAgentOldGetSecretsFunc callback;
+    public unowned NM.SecretAgentOldGetSecretsFunc callback;
 
     public VariantDict entries;
     public VariantBuilder builder_vpn;
@@ -78,7 +78,7 @@ namespace libTrem {
     public int n_secrets = 0;
     public NM.SecretAgentOld self;
     public NM.Connection connection;
-    public NM.SecretAgentOldDeleteSecretsFunc callback;
+    public unowned NM.SecretAgentOldDeleteSecretsFunc callback;
 
     public KeyringRequest(NM.SecretAgentOld self, NM.Connection connection,
         NM.SecretAgentOldDeleteSecretsFunc callback) {
