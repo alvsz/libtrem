@@ -87,22 +87,24 @@ namespace libTrem {
     private static DwlIpc _instance;
 
 
-    public DwlIpc() throws Error {
+    public DwlIpc() {
+      Object();
+    }
+
+    construct {
       wl_source = new WlSource ();
       assert_nonnull (wl_source);
-      display = wl_source.display;
 
+      display = wl_source.display;
       var registry = display.get_registry ();
 
       wl_registry_add_listener (registry, ref global_listener, this);
 
       display.roundtrip ();
-
-      if (ipc == null)
-        throw new IOError.FAILED ("failed to bind dwl_ipc interface");
+      assert_nonnull (ipc);
 
       dwl_ipc_add_listener (ipc, ref dwl_listener, this);
-      
+
       display.roundtrip ();
     }
 
@@ -123,13 +125,9 @@ namespace libTrem {
     }
 
     public static DwlIpc? get_default() {
-      if (_instance == null) {
-        try {
-          _instance = new DwlIpc();
-        } catch (Error e) {
-          warning("Falha ao inicializar a biblioteca DwlIpc: %s", e.message);
-        }
-      }
+      if (_instance == null)
+        _instance = new DwlIpc();
+
       return _instance;
     }
   }
