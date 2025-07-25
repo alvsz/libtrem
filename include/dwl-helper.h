@@ -20,5 +20,3 @@ void dwl_ipc_on_client_title_changed(void *data, struct dwl_ipc *ipc,
                                      const char *address);
 void dwl_ipc_on_client_state_changed(void *data, struct dwl_ipc *ipc,
                                      const char *address);
-const struct wl_registry_listener *get_global_listener(void);
-const struct dwl_ipc_listener *get_dwl_listener(void);

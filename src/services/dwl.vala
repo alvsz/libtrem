@@ -79,10 +79,8 @@ namespace libTrem {
   }
 
   public class DwlIpc : Object {
-    private Wl.Display display;
-    private int fd;
-    private IOChannel channel;
-    private uint watch_id;
+    private WlSource wl_source;
+    private unowned Wl.Display display;
     public unowned zdwl.Ipc? ipc;
 
     public signal void frame();
@@ -93,68 +91,36 @@ namespace libTrem {
     public signal void client_title_changed(string address);
     public signal void client_state_changed(string address);
 
-    private zdwl.IpcListener* dwl_listener;
-    private Wl.RegistryListener* global_listener;
+    private static zdwl.IpcListener dwl_listener;
+    private static Wl.RegistryListener global_listener;
 
     private static DwlIpc _instance;
 
 
     public DwlIpc() throws Error {
-      dwl_listener = get_dwl_listener ();
-      global_listener = get_global_listener ();
-      display = new Wl.Display.connect (null);
+      wl_source = new WlSource ();
+      assert_nonnull (wl_source);
+      display = wl_source.display;
+
       var registry = display.get_registry ();
 
-      registry.add_listener (*global_listener, this);
+      registry.add_listener (global_listener, this);
 
       display.roundtrip ();
 
       if (ipc == null)
         throw new IOError.FAILED ("failed to bind dwl_ipc interface");
 
-      ipc.add_listener (*dwl_listener, this);
+      ipc.add_listener (dwl_listener, this);
       
       display.roundtrip ();
 
-/*
-      var a = new Task (this,null,() => {
-        printerr ("display morreu!!!\n");
-      });
-      a.set_task_data (display,null);
-      a.run_in_thread ((a,b,c,d) => {
-        unowned Wl.Display e = (Wl.Display)c;
-        while (e.dispatch () != -1)
-          continue;
-      });
-*/
-
-/*
-      */
-      fd = display.get_fd ();
-      channel = new IOChannel.unix_new (fd);
-      watch_id = channel.add_watch (IOCondition.IN,(source, condition) => {
-        printerr ("coisou aqui, %p %p\n", global_listener, dwl_listener);
-        var ret = display.dispatch ();
-        if (ret == -1) {
-          warning ("disconnected from wayland display");
-          return Source.REMOVE;
-        }
-        printerr ("%d\n",ret);
-
-        return Source.CONTINUE;
-      });
-/*
-      */
-    }
-
-    ~DwlIpc() {
-      if (this.watch_id > 0) {
-        Source.remove (this.watch_id);
+      for (var i = 0; i < 100; i++) {
+        display.dispatch ();
       }
     }
 
     static construct {
-    /*
       global_listener = new Wl.RegistryListener () {};
       dwl_listener = new zdwl.IpcListener () {};
 
@@ -168,13 +134,6 @@ namespace libTrem {
       dwl_listener.client_closed = on_client_closed;
       dwl_listener.client_title_changed = on_client_title_changed;
       dwl_listener.client_state_changed = on_client_state_changed;
-      */
-
-      try {
-        _instance = new DwlIpc ();
-      } catch (Error e) {
-        warning ("Erro: %s", e.message);
-      }
     }
 
     public static DwlIpc? get_default() {

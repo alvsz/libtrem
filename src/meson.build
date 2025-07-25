@@ -30,6 +30,7 @@ vala_services = [
   'services/networkAgent.vala',
   'services/nm-secret-utils.vala',
   'services/dwl.vala',
+  'services/wl-source.vala'
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
@@ -40,7 +41,6 @@ vala_widgets = [
 dwl_ipc = [
   dwl_ipc_header,
   dwl_ipc_private_code,
-  './services/dwl-helper.c',
 ]
 
 lib = library(
