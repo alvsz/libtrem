@@ -59,7 +59,7 @@ namespace zdwl {
     [Compact]
     [CCode (cname = "struct dwl_command", free_function = "dwl_command_destroy")]
     public class Command : Wl.Proxy {
-        [CCode (cname = "dwl_command_interface")]
+        [CCode (cname = "(&dwl_command_interface)")]
         public static Wl.Interface interface;
 
         public int add_listener (CommandListener listener, void* data);
