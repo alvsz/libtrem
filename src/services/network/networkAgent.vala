@@ -110,6 +110,10 @@ namespace libTrem {
                                    int request_flags);
     public signal void cancel_request(string path);
 
+    construct {
+
+    }
+
     ~NetworkAgent() {
       requests.foreach ((id, request) => {
         var err = new NM.SecretAgentError.AGENTCANCELED ("The secret agent is going away");
