@@ -28,7 +28,7 @@ vala_services = [
   'services/calendar.vala',
   'services/remoteSearch.vala',
   'services/networkAgent.vala',
-  'services/nm-secret-utils.vala',
+  'services/function-utils.vala',
   'services/dwl.vala',
   'services/wl-source.vala'
 ]
