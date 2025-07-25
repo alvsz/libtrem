@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="dwl_ipc">
+  <copyright>
+    Copyright (c), Charlotte Meyer &lt;dev@buffet.sh&gt;
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this file,
+    You can obtain one at https://mozilla.org/MPL/2.0/.
+  </copyright>
+
+  <interface name="dwl_ipc" version="1">
+    <request name="eval">
+      <description summary="evaluate a given Lua snippet" />
+
+      <arg name="id" type="new_id" interface="dwl_command" />
+      <arg name="command" type="string" />
+    </request>
+
+    <event name="frame">
+      <description summary="The update sequence is done.">
+        Indicates that a sequence of status updates have finished and the client should redraw.
+      </description>
+    </event>
+
+    <event name="monitor_added">
+      <arg name="address" type="string" />
+    </event>
+
+    <event name="monitor_removed">
+      <arg name="address" type="string" />
+    </event>
+
+    <event name="client_opened">
+      <arg name="address" type="string" />
+    </event>
+
+    <event name="client_closed">
+      <arg name="address" type="string" />
+    </event>
+
+    <event name="client_title_changed">
+      <arg name="address" type="string" />
+    </event>
+
+    <event name="client_state_changed">
+      <arg name="address" type="string" />
+    </event>
+  </interface>
+
+  <interface name="dwl_command" version="1">
+    <enum name="error">
+      <entry name="success" value="0" summary="the command ran successfully" />
+      <entry name="failure" value="1" summary="the command did not run successfully" />
+    </enum>
+
+    <event name="done">
+      <arg name="error" type="uint" enum="error" />
+      <arg name="message" type="string" summary="error message or return value" />
+    </event>
+  </interface>
+</protocol>

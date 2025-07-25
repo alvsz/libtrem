@@ -18,7 +18,8 @@ deps = [
   dependency('gio-unix-2.0'),
   dependency('gio-2.0'),
   dependency('libnm'),
-  dependency('libsecret-1')
+  dependency('libsecret-1'),
+  dependency('wayland-client'),
 ]
 
 vala_services = [
@@ -28,6 +29,8 @@ vala_services = [
   'services/remoteSearch.vala',
   'services/networkAgent.vala',
   'services/nm-secret-utils.vala',
+  'services/dwl.vala',
+  'services/wl-source.vala'
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
@@ -35,11 +38,18 @@ vala_widgets = [
   # './widgets/notification.vala',
   # './widgets/notificationCenter.vala',
 ]
+dwl_ipc = [
+  dwl_ipc_header,
+  dwl_ipc_private_code,
+]
 
 lib = library(
   meson.project_name(),
-  libtrem_sources + vala_services + vala_widgets,
+  libtrem_sources + vala_services + vala_widgets + dwl_ipc,
   dependencies: deps,
+  vala_args: ['--vapidir=' + meson.project_source_root() + '/include',
+    '--pkg=zdwl'
+  ],
   vala_header: meson.project_name() + '.h',
   vala_vapi: meson.project_name() + '-' + api_version + '.vapi',
   vala_gir: gir,

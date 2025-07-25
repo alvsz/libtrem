@@ -21,4 +21,32 @@ namespace libTrem {
                 AsyncResult result
                 ) throws GLib.Error;
 
+    [CCode (cheader_filename = "wayland-client.h", cname = "wl_registry_bind")]
+        extern static void* wl_registry_bind (
+                Wl.Registry registry,
+                uint32 name,
+                Wl.Interface interface,
+                uint32 version
+        );
+
+    [CCode (cheader_filename = "wayland-client.h", cname = "wl_registry_add_listener")]
+        extern static int wl_registry_add_listener (
+                Wl.Registry registry,
+                ref Wl.RegistryListener listener,
+                void *data
+        );
+
+    [CCode (cheader_filename = "dwl-ipc-client-protocol.h", cname = "dwl_ipc_add_listener")]
+        extern static int dwl_ipc_add_listener (
+                zdwl.Ipc ipc,
+                ref zdwl.IpcListener listener,
+                void *data
+        );
+
+    [CCode (cheader_filename = "dwl-ipc-client-protocol.h", cname = "dwl_command_add_listener")]
+        extern static int dwl_command_add_listener (
+                zdwl.Command command,
+                ref zdwl.CommandListener listener,
+                void *data
+        );
 }

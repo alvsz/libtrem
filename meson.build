@@ -12,6 +12,7 @@ project(
 
 libtrem_sources = []
 
+subdir('protocols')
 subdir('data')
 subdir('src')
 
