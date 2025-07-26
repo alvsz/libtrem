@@ -1,13 +1,14 @@
 namespace libTrem {
-  public delegate bool ValidateNetworkSecret (string secret);
+  public delegate bool ValidateNetworkSecret (NetworkSecret secret);
 
   public class NetworkSecret : Object {
     public string label { get; private set; }
     public string? key { get; private set; }
-    public string val { get; private set; }
+    public string val { get; set; }
     public uint? wep_key_type { get; private set; }
     public unowned ValidateNetworkSecret? validate;
     public bool password { get; private set; }
+    public bool valid { get; set; default = false; }
 
     internal NetworkSecret (string label, string? key, string val, NM.WepKeyType? wep_key_type, ValidateNetworkSecret? validate, bool password) {
       this.label = label;
@@ -228,11 +229,35 @@ namespace libTrem {
       secrets.append(new NetworkSecret ("Senha", "password", password ?? "", null, null, true));
     }
 
-    private bool validate_wpa_psk (string secret) {
-      return true;
+    private bool validate_wpa_psk (NetworkSecret secret) {
+      var val = secret.val;
+      if (val.length == 64) {
+        foreach (var c in val.to_utf8 ()) 
+          if (!(c.isxdigit ()))
+            return false;
+
+        return true;
+      }
+      return val.length >= 8 && val.length <= 63;
     }
 
-    private bool validade_static_wep (string secret) {
+    private bool validade_static_wep (NetworkSecret secret) {
+      var val = secret.val;
+      if (secret.wep_key_type == NM.WepKeyType.KEY) {
+        if (val.length == 10 || val.length == 26) {
+          foreach (var c in val.to_utf8 ()) 
+            if (!(c.isxdigit ()))
+              return false;
+        } else if (val.length == 5 || val.length == 13) {
+          foreach (var c in val.to_utf8 ()) 
+            if (!(c.isalpha ()))
+              return false;
+        } else {
+          return false;
+        }
+      } else if (secret.wep_key_type == NM.WepKeyType.PASSPHRASE) {
+        return val.length > 0 && val.length < 64;
+      }
       return true;
     }
   }
