@@ -100,7 +100,7 @@ namespace libTrem {
           content.title = "Autenticação DSL";
           content.message = null;
 
-          get_ppoe_secrets (content.secrets);
+          get_pppoe_secrets (content.secrets);
           break;
         case NM.SettingGsm.SETTING_NAME:
           if (hints.find ("pin") != null) {
@@ -117,7 +117,7 @@ namespace libTrem {
           content.title = "Autenticação necessária";
           content.message = "Uma senha é necessária para se conectar a \"%s\"".printf (connection_setting.get_id ());
 
-          get_mobile_secrets (content.secrets);
+          get_mobile_secrets (content.secrets, connection_type);
           break;
         default:
           warning ("invalid connection type: %s\n", connection_type);
@@ -140,19 +140,19 @@ namespace libTrem {
         case "wpa-psk":
         case "sae":
           secrets.append (new NetworkSecret ("Senha",
-                "psk",
-                wireless_security_setting.get_psk () ?? "",
-                null,
-                validate_wpa_psk,
-                true));
+                                             "psk",
+                                             wireless_security_setting.get_psk () ?? "",
+                                             null,
+                                             validate_wpa_psk,
+                                             true));
           break;
         case "none":
           var idx = wireless_security_setting.get_wep_tx_keyidx ();
           secrets.append (new NetworkSecret ("Chave",
-                "wep-key%u".printf (idx), wireless_security_setting.get_wep_key (idx) ?? "",
-                wireless_security_setting.get_wep_key_type (),
-                validade_static_wep,
-                true));
+                                             "wep-key%u".printf (idx), wireless_security_setting.get_wep_key (idx) ?? "",
+                                             wireless_security_setting.get_wep_key_type (),
+                                             validade_static_wep,
+                                             true));
           break;
         case "ieee8021x":
           if (wireless_security_setting.get_auth_alg () == "leap") {
@@ -176,15 +176,56 @@ namespace libTrem {
     }
 
     private void get_8021x_secrets (List<NetworkSecret> secrets) {
+      var ieee_802_1x_setting = connection.get_setting_802_1x ();
 
+      if (setting_name == NM.Setting8021x.SETTING_NAME && hints.length () > 0) {
+        if (hints.find ("identity") != null)
+          secrets.append (new NetworkSecret ("Nome de usuário", "identity", ieee_802_1x_setting.get_identity () ?? "", null, null, false));
+        if (hints.find ("password") != null)
+          secrets.append (new NetworkSecret ("Senha", "password", ieee_802_1x_setting.get_password () ?? "", null, null, true));
+        if (hints.find ("private-key-password") != null)
+          secrets.append (new NetworkSecret("Senha da chave privada", "private-key-password", ieee_802_1x_setting.get_private_key_password () ?? "", null, null, true));
+
+        return;
+      }
+
+      switch (ieee_802_1x_setting.get_eap_method (0)) {
+        case "md5":
+        case "leap":
+        case "ttls":
+        case "peap":
+        case "fast":
+          secrets.append(new NetworkSecret("Nome de usuário",null, ieee_802_1x_setting.get_identity () ?? "", null, null, false));
+          secrets.append(new NetworkSecret("Senha", "password", ieee_802_1x_setting.get_password () ?? "", null, null, true));
+          break;
+        case "tls":
+          secrets.append(new NetworkSecret("Identidade", null, ieee_802_1x_setting.get_identity () ?? "", null, null, false));
+          secrets.append(new NetworkSecret("Senha da chave privada", "private-key-password", ieee_802_1x_setting.get_private_key_password () ?? "", null, null, true));
+          break;
+        default:
+          warning ("Invalid EAP/IEEE802.1x method: %s", ieee_802_1x_setting.get_eap_method (0));
+          break;
+      }
     }
 
-    private void get_ppoe_secrets (List<NetworkSecret> secrets) {
+    private void get_pppoe_secrets (List<NetworkSecret> secrets) {
+      var pppoe_setting = connection.get_setting_pppoe ();
 
+      secrets.append(new NetworkSecret("Nome de usuário","username", pppoe_setting.get_username () ?? "", null, null, false));
+      secrets.append(new NetworkSecret("Serviço","service", pppoe_setting.get_service () ?? "", null, null, false));
+      secrets.append(new NetworkSecret("Senha","password", pppoe_setting.get_password () ?? "", null, null, true));
     }
 
-    private void get_mobile_secrets (List<NetworkSecret> secrets) {
+    private void get_mobile_secrets (List<NetworkSecret> secrets, string connection_type) {
+      string password;
+      var cdma = connection.get_setting_cdma ();
 
+      if (connection_type == NM.SettingBluetooth.SETTING_NAME && cdma == null)
+        password = connection.get_setting_gsm ().get_password ();
+      else
+        password = cdma.get_password ();
+      
+      secrets.append(new NetworkSecret ("Senha", "password", password ?? "", null, null, true));
     }
 
     private bool validate_wpa_psk (string secret) {
