@@ -31,6 +31,9 @@ namespace libTrem {
   }
 
   public class VPNRequestHandler : Object {
+    internal VPNRequestHandler (NetworkAgent agent, string request_id, string service_type, NM.Connection connection, List<string> hints, int flags) {
+
+    }
 
   }
 
@@ -330,8 +333,7 @@ namespace libTrem {
                                  List<string> hints,
                                  int request_flags) {
       if (setting_name == NM.SettingVpn.SETTING_NAME) {
-        warning ("não suporta vpn ainda");
-        this.native.respond (request_id, NetworkAgentResponse.USER_CANCELED);
+        handle_vpn_request (request_id, connection, hints, request_flags);
         return;
       }
 
@@ -341,6 +343,53 @@ namespace libTrem {
       });
       dialogs.insert (request_id, dialog);
       initiate (dialog);
+    }
+
+    private void handle_vpn_request (string request_id, NM.Connection connection, List<string> hints, int request_flags) {
+      string path;
+      bool supports_hints, external_ui;
+      var vpn_setting = connection.get_setting_vpn ();
+      var service_type = vpn_setting.get_service_type ();
+
+      if(!find_auth_binary (service_type, out path, out supports_hints, out external_ui)) {
+        printerr ("Invalid VPN service type (cannot find authentication binary)\n");
+        this.native.respond (request_id, NetworkAgentResponse.INTERNAL_ERROR);
+        return;
+      }
+
+      var request = new VPNRequestHandler (native,request_id, service_type, connection, hints, request_flags);
+      this.vpn_requests.set (request_id, request);
+    }
+
+    private bool find_auth_binary (string service_type, out string path, out bool supports_hints, out bool external_ui_mode) {
+      path = "";
+      supports_hints = false;
+      external_ui_mode = false;
+      string[] valores_validos = { "true", "yes", "on", "1" };
+
+      try {
+        var plugin = native.search_vpn_plugin (service_type);
+        var file_name = plugin.get_auth_dialog ();
+
+        if (!GLib.FileUtils.test (file_name, GLib.FileTest.IS_EXECUTABLE)) {
+          warning ("VPN plugin em %s não é executável", file_name);
+          return false;
+        }
+
+        var prop = plugin.lookup_property ("GNOME", "supports-external-ui-mode");
+        var trimmed_prop = prop.strip ().down ();
+
+        path = file_name;
+        supports_hints = plugin.supports_hints ();
+
+        foreach (var s in valores_validos)
+          if (trimmed_prop == s)
+            external_ui_mode = true;
+      } catch (Error e) {
+        printerr ("Erro: %s\n", e.message);
+        return false;
+      }
+      return false;
     }
 
     private void cancel_request (NetworkAgent source, string request_id) {
