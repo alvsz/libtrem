@@ -23,14 +23,15 @@ deps = [
 ]
 
 vala_services = [
-  'services/weather.vala',
-  'services/evolutionDataServer.vala',
-  'services/calendar.vala',
-  'services/remoteSearch.vala',
-  'services/networkAgent.vala',
-  'services/function-utils.vala',
-  'services/dwl.vala',
-  'services/wl-source.vala'
+  './services/weather.vala',
+  './services/evolution/evolutionDataServer.vala',
+  './services/evolution/calendar.vala',
+  './services/remoteSearch.vala',
+  './services/network/networkAgent.vala',
+  './services/network/networkAgentHandler.vala',
+  './services/function-utils.vala',
+  './services/dwl/dwlIpc.vala',
+  './services/dwl/wl-source.vala'
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',

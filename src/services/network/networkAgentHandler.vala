@@ -1,5 +1,6 @@
 namespace libTrem {
   public delegate bool ValidateNetworkSecret (string secret);
+
   public class NetworkSecret : Object {
     public string label { get; private set; }
     public string? key { get; private set; }
@@ -16,7 +17,6 @@ namespace libTrem {
       this.validate = validate;
       this.password = password;
     }
-
   }
 
   public class NetworkSecretDialogContent : Object {
@@ -40,10 +40,11 @@ namespace libTrem {
     public string setting_name { get; private set; }
     public unowned List<string> hints { get; private set; }
     public int flags { get; private set; }
-    public NetworkSecretDialogContent content { get; private set; }
+    private NetworkSecretDialogContent content;
 
-    public string title { get; private set; }
-    public string message { get; private set; }
+    public string title { get { return content.title; }  }
+    public string message { get { return content.message; } }
+    public List<weak NetworkSecret> secrets { owned get { return content.secrets.copy (); } }
 
     public signal void done (bool failed);
 
@@ -60,7 +61,11 @@ namespace libTrem {
       if (content_override != null)
         this.content = content_override;
       else
-        this.content = get_content ();      
+        this.content = get_content ();
+
+      notify_property ("title");
+      notify_property ("message");
+      notify_property ("secrets");
     }
 
     public void cancel () {
@@ -167,8 +172,6 @@ namespace libTrem {
           warning ("Invalid wireless key management: %s", wireless_security_setting.key_mgmt);
           break;
       }
-
-
     }
 
     private void get_8021x_secrets (List<NetworkSecret> secrets) {
