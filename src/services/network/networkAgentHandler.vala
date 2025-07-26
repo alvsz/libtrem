@@ -5,7 +5,7 @@ namespace libTrem {
     public string label { get; private set; }
     public string? key { get; private set; }
     public string val { get; private set; }
-    public NM.WepKeyType? wep_key_type { get; private set; }
+    public uint? wep_key_type { get; private set; }
     public unowned ValidateNetworkSecret? validate;
     public bool password { get; private set; }
 
@@ -19,12 +19,12 @@ namespace libTrem {
     }
   }
 
-  public class NetworkSecretDialogContent : Object {
-    public string title { get; set; }
-    public string? message { get; set; }
-    public List<NetworkSecret> secrets { get; set; }
+  internal class NetworkSecretDialogContent : Object {
+    public string title;
+    public string? message;
+    public List<NetworkSecret> secrets;
 
-    internal NetworkSecretDialogContent() {
+    public NetworkSecretDialogContent() {
       secrets = new List<NetworkSecret> ();
     }
   }
@@ -40,6 +40,7 @@ namespace libTrem {
     public string setting_name { get; private set; }
     public unowned List<string> hints { get; private set; }
     public int flags { get; private set; }
+
     private NetworkSecretDialogContent content;
 
     public string title { get { return content.title; }  }
@@ -187,11 +188,11 @@ namespace libTrem {
     }
 
     private bool validate_wpa_psk (string secret) {
-    return true;
+      return true;
     }
 
     private bool validade_static_wep (string secret) {
-    return true;
+      return true;
     }
   }
 
@@ -263,7 +264,7 @@ namespace libTrem {
                                  List<string> hints,
                                  int request_flags) {
       if (setting_name == NM.SettingVpn.SETTING_NAME) {
-        printerr ("não suporta vpn ainda");
+        warning ("não suporta vpn ainda");
         this.native.respond (request_id, NetworkAgentResponse.USER_CANCELED);
         return;
       }
