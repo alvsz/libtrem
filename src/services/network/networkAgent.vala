@@ -107,7 +107,7 @@ namespace libTrem {
                                    NM.Connection connection,
                                    string setting_name,
                                    List<string> hints,
-                                   int request_flags);
+                                   NM.SecretAgentGetSecretsFlags request_flags);
     public signal void cancel_request(string path);
 
     construct {
