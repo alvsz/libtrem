@@ -157,12 +157,12 @@ namespace libTrem {
       return Secret.attributes_build (schema, UUID_TAG, connection_uuid, SN_TAG, setting_name, SK_TAG, setting_key);
     }
 
-    internal static void save_one_secret (KeyringRequest r, NM.Setting setting, string key, string secret, string display_name) {
+    internal static void save_one_secret (KeyringRequest r, NM.Setting setting, string key, string secret, string? display_name) {
       string alt_display_name;
       var secret_flags = NM.SettingSecretFlags.NONE;
 
       try {
-        nm_setting_get_secret_flags_fixed (setting,key,out secret_flags);
+        nm_setting_get_secret_flags_fixed (setting, key, out secret_flags);
       } catch (Error e) {
         warning ("Error: %s", e.message);
       }
@@ -172,19 +172,19 @@ namespace libTrem {
 
       var setting_name = setting.get_name ();
 
-      var attrs = create_keyring_add_attr_list (r.connection,null,null,setting_name,key,out alt_display_name);
+      var attrs = create_keyring_add_attr_list (r.connection, null, null, setting_name, key, out alt_display_name);
 
       if (attrs == null)
         return;
 
       r.n_secrets++;
 
-      Secret.password_storev.begin (schema,attrs,Secret.COLLECTION_DEFAULT,display_name != null ? display_name : alt_display_name, secret, null, (source,result) => {
+      Secret.password_storev.begin (schema, attrs, Secret.COLLECTION_DEFAULT, display_name ?? alt_display_name, secret, null, (source,result) => {
         r.n_secrets--;
 
         if (r.n_secrets == 0) {
           if (r.callback != null)
-            r.callback (r.self,r.connection,null);
+            r.callback (r.self, r.connection,null);
         }
       });
     }
