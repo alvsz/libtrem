@@ -31,7 +31,6 @@ vala_services = [
   './services/network/networkAgentHandler.vala',
   './services/function-utils.vala',
   './services/dwl/dwlIpc.vala',
-  './services/dwl/wl-source.vala'
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
