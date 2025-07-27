@@ -6,6 +6,20 @@ namespace libTrem {
                 out NM.SettingSecretFlags flags
                 ) throws GLib.Error;
 
+    [CCode (cheader_filename = "NetworkManager.h", cname = "nm_secret_agent_old_save_secrets")]
+        extern static void nm_secret_agent_old_save_secrets (
+                NM.SecretAgentOld self,
+                NM.Connection connection,
+                [CCode (scope = "async")] NM.SecretAgentOldSaveSecretsFunc callback
+        );
+
+    [CCode (cheader_filename = "NetworkManager.h", cname = "nm_secret_agent_old_delete_secrets")]
+        extern static void nm_secret_agent_old_delete_secrets (
+                NM.SecretAgentOld self,
+                NM.Connection connection,
+                [CCode (scope = "async")] NM.SecretAgentOldSaveSecretsFunc callback
+        );
+
     [CCode (cheader_filename = "libsecret/secret.h", cname = "secret_service_search")]
         extern async static unowned List<Secret.Item> secret_service_search (
                 Secret.Service? service,

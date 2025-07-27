@@ -252,7 +252,7 @@ namespace libTrem {
                                        NM.SecretAgentOldSaveSecretsFunc callback) {
       var r = new KeyringRequest (this,connection,callback);
 
-      base.delete_secrets (connection,connection_path,(agent,conn,err) => {
+      nm_secret_agent_old_delete_secrets (this, connection, (agent,conn,err) => {
         conn.for_each_setting_value ((setting,key,value,flags) => {
           if ((flags & NM.Setting.SECRET) == 0)
             return;
@@ -438,7 +438,7 @@ namespace libTrem {
         var dup = NM.SimpleConnection.new_clone (request.connection);
         try {
           dup.update_secrets (request.setting_name, setting);
-          base.save_secrets (dup,null,null);
+          nm_secret_agent_old_save_secrets (this, dup, null);
         } catch (Error e) {}
       }
 
