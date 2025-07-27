@@ -303,25 +303,28 @@ namespace libTrem {
 
       native.new_request.connect (new_request);
       native.cancel_request.connect (cancel_request);
-
-      init_native.begin ();
     }
 
-    private async void init_native () {
-      try {
-        initialized = yield native.init_async(Priority.DEFAULT, null);
-      } catch (Error e) {
-        warning ("Error: %s", e.message);
+    public async void enable () {
+      if (!initialized && !native.registered) {
+        try {
+          initialized = yield native.init_async(Priority.DEFAULT, null);
+          yield native.register_async(null);
+        } catch (Error e) {
+          warning ("Error: %s", e.message);
+        }
       }
     }
 
-    public void enable () {
-      if (initialized && !native.registered)
-        native.register_async.begin (null);
-    }
+    public async void disable () {
+      foreach (var req in vpn_requests.get_values ()) {
+      //  req.cancel ();
+      }
+      foreach (var req in dialogs.get_values ()) {
+        req.cancel ();
+      }
 
-    public void disable () {
-
+      native.enable (false);
     }
 
     private void new_request (NetworkAgent source,
