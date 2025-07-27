@@ -2,20 +2,28 @@ namespace libTrem {
   public delegate bool ValidateNetworkSecret (NetworkSecret secret);
 
   public class NetworkSecret : Object {
+    private string _val;
+
     public string label { get; private set; }
     public string? key { get; private set; }
-    public string val { get; set; }
+    public string val {
+      get { return this._val; }
+      set {
+        this._val = value;
+        this.valid = this.validate(this);
+      }
+    }
     public uint wep_key_type { get; private set; }
-    public unowned ValidateNetworkSecret? validate { get; private set; }
+    private unowned ValidateNetworkSecret validate;
     public bool password { get; private set; }
-    public bool valid { get; set; default = false; }
+    public bool valid { get; private set; default = false; }
 
-    internal NetworkSecret (string label, string? key, string val, NM.WepKeyType? wep_key_type, ValidateNetworkSecret? validate, bool password) {
+    internal NetworkSecret (string label, string? key, string val, NM.WepKeyType? wep_key_type, ValidateNetworkSecret validate, bool password) {
       this.label = label;
       this.key = key;
+      this.validate = validate;
       this.val = val;
       this.wep_key_type = wep_key_type ?? 0;
-      this.validate = validate;
       this.password = password;
     }
   }
@@ -111,7 +119,7 @@ namespace libTrem {
         case NM.SettingWired.SETTING_NAME:
           content.title = "Autenticação 802.1X com cabo";
           content.message = null;
-          content.secrets.append (new NetworkSecret ("Nome da rede", null, connection_setting.get_id (), null, null, false));
+          content.secrets.append (new NetworkSecret ("Nome da rede", null, connection_setting.get_id (), null, validate_others, false));
 
           get_8021x_secrets (ref content.secrets);
           break;
@@ -127,7 +135,7 @@ namespace libTrem {
             content.title = "Código PIN necessário";
             content.message = "O código PIN é necessário para o dispositivo móvel de banda larga";
 
-            content.secrets.append(new NetworkSecret ("PIN", "pin", gsm_setting.get_pin () ?? "", null, null, true));
+            content.secrets.append(new NetworkSecret ("PIN", "pin", gsm_setting.get_pin () ?? "", null, validate_others, true));
           }
           break;
         case NM.SettingCdma.SETTING_NAME:
@@ -170,7 +178,7 @@ namespace libTrem {
           secrets.append (new NetworkSecret ("Chave",
                                              "wep-key%u".printf (idx), wireless_security_setting.get_wep_key (idx) ?? "",
                                              wireless_security_setting.get_wep_key_type (),
-                                             validade_static_wep,
+                                             validate_static_wep,
                                              true));
           break;
         case "ieee8021x":
@@ -179,7 +187,7 @@ namespace libTrem {
                   "leap-password",
                   wireless_security_setting.get_leap_password () ?? "",
                   null,
-                  null,
+                  validate_others,
                   true));
           } else {
             get_8021x_secrets (ref secrets);
@@ -199,11 +207,11 @@ namespace libTrem {
 
       if (setting_name == NM.Setting8021x.SETTING_NAME && hints.length () > 0) {
         if (hints.find ("identity") != null)
-          secrets.append (new NetworkSecret ("Nome de usuário", "identity", ieee_802_1x_setting.get_identity () ?? "", null, null, false));
+          secrets.append (new NetworkSecret ("Nome de usuário", "identity", ieee_802_1x_setting.get_identity () ?? "", null, validate_others, false));
         if (hints.find ("password") != null)
-          secrets.append (new NetworkSecret ("Senha", "password", ieee_802_1x_setting.get_password () ?? "", null, null, true));
+          secrets.append (new NetworkSecret ("Senha", "password", ieee_802_1x_setting.get_password () ?? "", null, validate_others, true));
         if (hints.find ("private-key-password") != null)
-          secrets.append (new NetworkSecret("Senha da chave privada", "private-key-password", ieee_802_1x_setting.get_private_key_password () ?? "", null, null, true));
+          secrets.append (new NetworkSecret("Senha da chave privada", "private-key-password", ieee_802_1x_setting.get_private_key_password () ?? "", null, validate_others, true));
 
         return;
       }
@@ -214,12 +222,12 @@ namespace libTrem {
         case "ttls":
         case "peap":
         case "fast":
-          secrets.append(new NetworkSecret("Nome de usuário",null, ieee_802_1x_setting.get_identity () ?? "", null, null, false));
-          secrets.append(new NetworkSecret("Senha", "password", ieee_802_1x_setting.get_password () ?? "", null, null, true));
+          secrets.append(new NetworkSecret("Nome de usuário",null, ieee_802_1x_setting.get_identity () ?? "", null, validate_others, false));
+          secrets.append(new NetworkSecret("Senha", "password", ieee_802_1x_setting.get_password () ?? "", null, validate_others, true));
           break;
         case "tls":
-          secrets.append(new NetworkSecret("Identidade", null, ieee_802_1x_setting.get_identity () ?? "", null, null, false));
-          secrets.append(new NetworkSecret("Senha da chave privada", "private-key-password", ieee_802_1x_setting.get_private_key_password () ?? "", null, null, true));
+          secrets.append(new NetworkSecret("Identidade", null, ieee_802_1x_setting.get_identity () ?? "", null, validate_others, false));
+          secrets.append(new NetworkSecret("Senha da chave privada", "private-key-password", ieee_802_1x_setting.get_private_key_password () ?? "", null, validate_others, true));
           break;
         default:
           warning ("Invalid EAP/IEEE802.1x method: %s", ieee_802_1x_setting.get_eap_method (0));
@@ -230,9 +238,9 @@ namespace libTrem {
     private void get_pppoe_secrets (ref List<NetworkSecret> secrets) {
       var pppoe_setting = connection.get_setting_pppoe ();
 
-      secrets.append(new NetworkSecret("Nome de usuário","username", pppoe_setting.get_username () ?? "", null, null, false));
-      secrets.append(new NetworkSecret("Serviço","service", pppoe_setting.get_service () ?? "", null, null, false));
-      secrets.append(new NetworkSecret("Senha","password", pppoe_setting.get_password () ?? "", null, null, true));
+      secrets.append(new NetworkSecret("Nome de usuário","username", pppoe_setting.get_username () ?? "", null, validate_others, false));
+      secrets.append(new NetworkSecret("Serviço","service", pppoe_setting.get_service () ?? "", null, validate_others, false));
+      secrets.append(new NetworkSecret("Senha","password", pppoe_setting.get_password () ?? "", null, validate_others, true));
     }
 
     private void get_mobile_secrets (ref List<NetworkSecret> secrets, string connection_type) {
@@ -244,7 +252,7 @@ namespace libTrem {
       else
         password = cdma.get_password ();
       
-      secrets.append(new NetworkSecret ("Senha", "password", password ?? "", null, null, true));
+      secrets.append(new NetworkSecret ("Senha", "password", password ?? "", null, validate_others, true));
     }
 
     private bool validate_wpa_psk (NetworkSecret secret) {
@@ -259,7 +267,7 @@ namespace libTrem {
       return val.length >= 8 && val.length <= 63;
     }
 
-    private bool validade_static_wep (NetworkSecret secret) {
+    private bool validate_static_wep (NetworkSecret secret) {
       var val = secret.val;
       if (secret.wep_key_type == NM.WepKeyType.KEY) {
         if (val.length == 10 || val.length == 26) {
@@ -277,6 +285,11 @@ namespace libTrem {
         return val.length > 0 && val.length < 64;
       }
       return true;
+    }
+
+    private bool validate_others (NetworkSecret secret) {
+      var val = secret.val;
+      return val.length > 0;
     }
   }
 
