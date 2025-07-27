@@ -25,7 +25,7 @@ namespace libTrem {
     public string? message;
     public List<NetworkSecret> secrets;
 
-    public NetworkSecretDialogContent() {
+    internal NetworkSecretDialogContent() {
       secrets = new List<NetworkSecret> ();
     }
   }
@@ -34,7 +34,6 @@ namespace libTrem {
     internal VPNRequestHandler (NetworkAgent agent, string request_id, string service_type, NM.Connection connection, List<string> hints, int flags) {
 
     }
-
   }
 
   public class NetworkSecretDialog : Object {
@@ -49,9 +48,9 @@ namespace libTrem {
 
     public string title { get { return content.title; }  }
     public string message { get { return content.message; } }
-    public List<weak NetworkSecret> secrets { owned get { return content.secrets.copy (); } }
+    public List<weak NetworkSecret> secrets { owned get { return content.secrets.copy(); } }
 
-    public signal void done (bool failed);
+    public signal void done (bool cancelled);
 
     internal NetworkSecretDialog (NetworkAgent agent, string request_id, NM.Connection connection, string setting_name, List<string> hints, int flags, NetworkSecretDialogContent? content_override) {
       this.agent = agent;
@@ -76,6 +75,24 @@ namespace libTrem {
     public void cancel () {
       this.agent.respond (this.request_id, NetworkAgentResponse.USER_CANCELED);
       this.done (true);
+    }
+
+    public void authenticate (List<NetworkSecret> secrets) {
+      var valid = true;
+      foreach (var secret in secrets) {
+        valid = valid && secret.valid;
+        if (secret.key != null) {
+          if (setting_name == NM.SettingVpn.SETTING_NAME)
+            agent.add_vpn_secret (request_id, secret.key, secret.val);
+          else
+            agent.set_password (request_id, secret.key, secret.val);
+        }
+      }
+      
+      if (valid) {
+        agent.respond (request_id, libTrem.NetworkAgentResponse.CONFIRMED);
+        done (false);
+      }
     }
 
     private NetworkSecretDialogContent get_content () {
@@ -403,6 +420,6 @@ namespace libTrem {
         vpn_requests.remove (request_id);
       }
     }
-}
+  }
 }
 

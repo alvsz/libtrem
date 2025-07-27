@@ -244,7 +244,6 @@ namespace libTrem {
     }
 
     private void request_secrets_from_ui (AgentRequest request) {
-      printerr("sending new request\n\t%s, %s, %d %u\n\n",request.request_id,request.setting_name,request.flags,request.hints.length ());
       new_request (request.request_id,request.connection,request.setting_name,request.hints,request.flags);
     }
 
@@ -313,7 +312,6 @@ namespace libTrem {
           
         try {
           items = secret_service_search_finish ((Secret.Service)source, res);
-          printerr ("sync terminou %u\n", items.length ());
         } catch (IOError.CANCELLED e) {
           return;
         } catch (Error e) {
