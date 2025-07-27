@@ -5,8 +5,8 @@ namespace libTrem {
     public string label { get; private set; }
     public string? key { get; private set; }
     public string val { get; set; }
-    public uint? wep_key_type { get; private set; }
-    public unowned ValidateNetworkSecret? validate;
+    public uint wep_key_type { get; private set; }
+    public unowned ValidateNetworkSecret? validate { get; private set; }
     public bool password { get; private set; }
     public bool valid { get; set; default = false; }
 
@@ -14,7 +14,7 @@ namespace libTrem {
       this.label = label;
       this.key = key;
       this.val = val;
-      this.wep_key_type = wep_key_type;
+      this.wep_key_type = wep_key_type ?? 0;
       this.validate = validate;
       this.password = password;
     }
@@ -23,11 +23,9 @@ namespace libTrem {
   internal class NetworkSecretDialogContent : Object {
     public string title;
     public string? message;
-    public List<NetworkSecret> secrets;
+    internal List<NetworkSecret> secrets  = new List<NetworkSecret> ();
 
-    internal NetworkSecretDialogContent() {
-      secrets = new List<NetworkSecret> ();
-    }
+    internal NetworkSecretDialogContent() {}
   }
 
   public class VPNRequestHandler : Object {
@@ -48,7 +46,7 @@ namespace libTrem {
 
     public string title { get { return content.title; }  }
     public string message { get { return content.message; } }
-    public List<weak NetworkSecret> secrets { owned get { return content.secrets.copy(); } }
+    public List<weak NetworkSecret> secrets { owned get { return content.secrets.copy (); } }
 
     public signal void done (bool cancelled);
 
@@ -65,7 +63,7 @@ namespace libTrem {
       if (content_override != null)
         this.content = content_override;
       else
-        this.content = get_content ();
+        this.content = make_content ();
 
       notify_property ("title");
       notify_property ("message");
@@ -95,7 +93,7 @@ namespace libTrem {
       }
     }
 
-    private NetworkSecretDialogContent get_content () {
+    private NetworkSecretDialogContent make_content () {
       var connection_setting = connection.get_setting_connection ();
       var connection_type = connection_setting.get_connection_type ();
       var content = new NetworkSecretDialogContent ();
@@ -108,20 +106,20 @@ namespace libTrem {
           content.title = "Autenticação necessária";
           content.message = "Senhas ou chaves criptografadas são necessárias para acessar a rede sem fio \"%s\"".printf (ssid);
 
-          get_wireless_secrets (content.secrets, wireless_setting);
+          get_wireless_secrets (ref content.secrets, wireless_setting);
           break;
         case NM.SettingWired.SETTING_NAME:
           content.title = "Autenticação 802.1X com cabo";
           content.message = null;
           content.secrets.append (new NetworkSecret ("Nome da rede", null, connection_setting.get_id (), null, null, false));
 
-          get_8021x_secrets (content.secrets);
+          get_8021x_secrets (ref content.secrets);
           break;
         case NM.SettingPppoe.SETTING_NAME:
           content.title = "Autenticação DSL";
           content.message = null;
 
-          get_pppoe_secrets (content.secrets);
+          get_pppoe_secrets (ref content.secrets);
           break;
         case NM.SettingGsm.SETTING_NAME:
           if (hints.find ("pin") != null) {
@@ -138,7 +136,7 @@ namespace libTrem {
           content.title = "Autenticação necessária";
           content.message = "Uma senha é necessária para se conectar a \"%s\"".printf (connection_setting.get_id ());
 
-          get_mobile_secrets (content.secrets, connection_type);
+          get_mobile_secrets (ref content.secrets, connection_type);
           break;
         default:
           warning ("invalid connection type: %s\n", connection_type);
@@ -148,11 +146,11 @@ namespace libTrem {
       return (owned)content;
     }
 
-    private void get_wireless_secrets (List<NetworkSecret> secrets, NM.SettingWireless setting) {
+    private void get_wireless_secrets (ref List<NetworkSecret> secrets, NM.SettingWireless setting) {
       var wireless_security_setting = connection.get_setting_wireless_security ();
 
       if (setting_name == NM.Setting8021x.SETTING_NAME) {
-        get_8021x_secrets (secrets);
+        get_8021x_secrets (ref secrets);
         return;
       }
 
@@ -184,11 +182,11 @@ namespace libTrem {
                   null,
                   true));
           } else {
-            get_8021x_secrets (secrets);
+            get_8021x_secrets (ref secrets);
           }
           break;
         case "wpa-eap":
-          get_8021x_secrets (secrets);
+          get_8021x_secrets (ref secrets);
           break;
         default:
           warning ("Invalid wireless key management: %s", wireless_security_setting.key_mgmt);
@@ -196,7 +194,7 @@ namespace libTrem {
       }
     }
 
-    private void get_8021x_secrets (List<NetworkSecret> secrets) {
+    private void get_8021x_secrets (ref List<NetworkSecret> secrets) {
       var ieee_802_1x_setting = connection.get_setting_802_1x ();
 
       if (setting_name == NM.Setting8021x.SETTING_NAME && hints.length () > 0) {
@@ -229,7 +227,7 @@ namespace libTrem {
       }
     }
 
-    private void get_pppoe_secrets (List<NetworkSecret> secrets) {
+    private void get_pppoe_secrets (ref List<NetworkSecret> secrets) {
       var pppoe_setting = connection.get_setting_pppoe ();
 
       secrets.append(new NetworkSecret("Nome de usuário","username", pppoe_setting.get_username () ?? "", null, null, false));
@@ -237,7 +235,7 @@ namespace libTrem {
       secrets.append(new NetworkSecret("Senha","password", pppoe_setting.get_password () ?? "", null, null, true));
     }
 
-    private void get_mobile_secrets (List<NetworkSecret> secrets, string connection_type) {
+    private void get_mobile_secrets (ref List<NetworkSecret> secrets, string connection_type) {
       string password;
       var cdma = connection.get_setting_cdma ();
 
@@ -317,7 +315,7 @@ namespace libTrem {
     }
 
     public async void disable () {
-      foreach (var req in vpn_requests.get_values ()) {
+foreach (var req in vpn_requests.get_values ()) {
       //  req.cancel ();
       }
       foreach (var req in dialogs.get_values ()) {
