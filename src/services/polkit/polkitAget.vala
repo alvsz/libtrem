@@ -32,9 +32,8 @@ namespace libTrem {
       this.identities = identities.copy ();
       this.cancellable = cancellable;
 
-      this.simple = new Task (agent, cancellable, () => {
-
-      });
+      this.simple = new Task (agent, cancellable, null);
+      simple.set_name (cookie);
 
       identities.foreach ((i) => {
         i.ref ();
@@ -88,10 +87,10 @@ namespace libTrem {
     }
 
     private async bool wait_for_request (Task t) throws Error {
-    var loop = new MainLoop ();
+      var loop = new MainLoop ();
       t.notify.connect (() => {
-        loop.quit ();
-      });
+          loop.quit ();
+          });
       loop.run ();
 
       return t.propagate_boolean ();
@@ -129,7 +128,7 @@ namespace libTrem {
     private void auth_request_complete (AuthRequest request, bool dismissed) {
       var is_current = current_request == request;
 
-      printerr ("COMPLETING %s %s cookie %s\n", is_current ? "CURRENT" : "SCHEDULED", request.action_id, request.cookie);
+      // printerr ("COMPLETING %s %s cookie %s\n", is_current ? "CURRENT" : "SCHEDULED", request.action_id, request.cookie);
 
       if (!is_current)
         scheduled_requests.remove (request);
@@ -148,14 +147,14 @@ namespace libTrem {
     }
 
     private void maybe_process_next_request () {
-      printerr ("MAYBE_PROCESS cur=%p len(scheduled)=%u\n", current_request, scheduled_requests.length ());
+      // printerr ("MAYBE_PROCESS cur=%p len(scheduled)=%u\n", current_request, scheduled_requests.length ());
       
       if (current_request == null && scheduled_requests != null) {
         var request = scheduled_requests.data;
         current_request = request;
         scheduled_requests.remove (request);
 
-        printerr ("INITIATING %sauth_request_initiate cookie %s\n", request.action_id, request.cookie);
+        // printerr ("INITIATING %sauth_request_initiate cookie %s\n", request.action_id, request.cookie);
         auth_request_initiate (request);
       }
     }
