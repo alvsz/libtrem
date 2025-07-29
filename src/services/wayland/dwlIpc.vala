@@ -9,7 +9,7 @@ namespace libTrem {
   }
 
   public class DwlIpc : Object {
-    private WlSource wl_source;
+    internal WlSource wl_source;
     private  unowned Wl.Display display;
     internal unowned zdwl.Ipc? ipc;
 
@@ -103,7 +103,7 @@ namespace libTrem {
     construct {
       wl_source = new WlSource();
       assert_nonnull (wl_source);
-      display = wl_source.display;
+      display = (Wl.Display)wl_source.display;
 
       var registry = display.get_registry ();
 
@@ -199,17 +199,17 @@ namespace libTrem {
     }
 
     private void on_monitor_added (DwlIpc source, string address) {
-      printerr ("monitor added: %s", address);
+      printerr ("monitor added: %s\n", address);
       _monitors.insert (address, new DwlMonitor (address));
     }
 
     private void on_monitor_removed (DwlIpc source, string address) {
-      printerr ("monitor removed: %s", address);
+      printerr ("monitor removed: %s\n", address);
       _monitors.remove (address);
     }
 
     private void on_monitor_layout_changed (DwlIpc source, string address) {
-      printerr ("monitor layout: %s", address);
+      printerr ("monitor layout: %s\n", address);
       var m = _monitors.get (address);
 
       if (m == null)
@@ -219,17 +219,17 @@ namespace libTrem {
     }
 
     private void on_client_opened (DwlIpc source, string address) {
-      printerr ("client opened: %s", address);
+      printerr ("client opened: %s\n", address);
       _clients.insert (address, new DwlClient (address));
     }
 
     private void on_client_closed (DwlIpc source, string address) {
-      printerr ("client closed: %s", address);
+      printerr ("client closed: %s\n", address);
       _clients.remove (address);
     }
 
     private void on_client_title_changed (DwlIpc source, string address) {
-      printerr ("client title: %s", address);
+      printerr ("client title: %s\n", address);
       var c = _clients.get (address);
 
       if (c == null)
@@ -239,7 +239,7 @@ namespace libTrem {
     }
 
     private void on_client_state_changed (DwlIpc source, string address) {
-      printerr ("client state: %s", address);
+      printerr ("client state: %s\n", address);
       var c = _clients.get (address);
 
       if (c == null)
