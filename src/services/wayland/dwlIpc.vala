@@ -69,10 +69,8 @@ namespace libTrem {
   }
 
   public class DwlIpc : Object {
-    private Wl.Display display;
-    private int fd;
-    private IOChannel channel;
-    private uint watch_id;
+    private WlSource wl_source;
+    private  unowned Wl.Display display;
     internal unowned zdwl.Ipc? ipc;
 
     private List<zdwl.Command> commands;
@@ -96,7 +94,10 @@ namespace libTrem {
     }
 
     construct {
-      display = new Wl.Display.connect(null);
+      wl_source = new WlSource();
+      assert_nonnull (wl_source);
+      display = wl_source.display;
+
       var registry = display.get_registry ();
 
       wl_registry_add_listener (registry, ref global_listener, this);
@@ -107,16 +108,6 @@ namespace libTrem {
       ipc.add_listener (ref dwl_listener, this);
 
       display.roundtrip ();
-      fd = display.get_fd ();
-      channel = new IOChannel.unix_new (fd);
-      watch_id = channel.add_watch (IOCondition.IN,(source, condition) => {
-        var ret = display.dispatch ();
-        if (ret == -1) {
-          warning ("disconnected from wayland display");
-          return Source.REMOVE;
-        }
-        return Source.CONTINUE;
-      });
     }
 
     static construct {
