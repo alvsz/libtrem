@@ -1,5 +1,5 @@
 namespace libTrem {
-  public delegate bool ValidateNetworkSecret (NetworkSecret secret);
+  internal delegate bool ValidateNetworkSecret (NetworkSecret secret);
 
   public class NetworkSecret : Object {
     private string _val;

@@ -6,20 +6,21 @@ typelib = 'libTrem-' + api_version + '.typelib'
 deps = [
   dependency('glib-2.0'),
   dependency('gobject-2.0'),
+  dependency('gio-2.0'),
+  dependency('gio-unix-2.0'),
   dependency('libgeoclue-2.0'),
   dependency('gweather4'),
   dependency('libecal-2.0'),
   dependency('libedataserver-1.2'),
   dependency('libical-glib'),
-  dependency('gtk4'),
-  dependency('astal-mpris-0.1'),
-  dependency('astal-cava-0.1'),
+  # dependency('gtk4'),
+  # dependency('astal-mpris-0.1'),
+  # dependency('astal-cava-0.1'),
   dependency('gdk-pixbuf-2.0'),
-  dependency('gio-unix-2.0'),
-  dependency('gio-2.0'),
   dependency('libnm'),
   dependency('libsecret-1'),
   dependency('wayland-client'),
+  dependency('polkit-agent-1'),
 ]
 
 vala_services = [
@@ -31,6 +32,7 @@ vala_services = [
   './services/network/networkAgentHandler.vala',
   './services/function-utils.vala',
   './services/dwl/dwlIpc.vala',
+  './services/polkit/polkitAget.vala',
 ]
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
@@ -53,6 +55,9 @@ lib = library(
   vala_header: meson.project_name() + '.h',
   vala_vapi: meson.project_name() + '-' + api_version + '.vapi',
   vala_gir: gir,
+  c_args: [
+    '-DPOLKIT_AGENT_I_KNOW_API_IS_SUBJECT_TO_CHANGE'
+  ],
   version: meson.project_version(),
   install: true,
   install_dir: [true, true, true, true],
