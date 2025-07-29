@@ -30,6 +30,10 @@
       <arg name="address" type="string" />
     </event>
 
+    <event name="monitor_layout_changed">
+      <arg name="address" type="string" />
+    </event>
+
     <event name="client_opened">
       <arg name="address" type="string" />
     </event>

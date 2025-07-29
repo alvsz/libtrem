@@ -7,6 +7,8 @@ namespace zdwl {
     [CCode (has_target = false, has_typedef = false)]
 	public delegate void IpcListenerMonitorRemoved (void *data, Ipc ipc, string address);
     [CCode (has_target = false, has_typedef = false)]
+	public delegate void IpcListenerMonitorLayoutChanged (void *data, Ipc ipc, string address);
+    [CCode (has_target = false, has_typedef = false)]
 	public delegate void IpcListenerClientOpened (void *data, Ipc ipc, string address);
     [CCode (has_target = false, has_typedef = false)]
 	public delegate void IpcListenerClientClosed (void *data, Ipc ipc, string address);
@@ -20,6 +22,7 @@ namespace zdwl {
         public IpcListenerFrame frame;
         public IpcListenerMonitorAdded monitor_added;
         public IpcListenerMonitorRemoved monitor_removed;
+        public IpcListenerMonitorLayoutChanged monitor_layout_changed;
         public IpcListenerClientOpened client_opened;
         public IpcListenerClientClosed client_closed;
         public IpcListenerClientTitleChanged client_title_changed;

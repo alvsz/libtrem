@@ -31,7 +31,8 @@ vala_services = [
   './services/network/networkAgent.vala',
   './services/network/networkAgentHandler.vala',
   './services/function-utils.vala',
-  './services/dwl/dwlIpc.vala',
+  './services/wayland/dwlIpc.vala',
+  './services/wayland/wl-source.vala',
   './services/polkit/polkitAget.vala',
 ]
 vala_widgets = [
