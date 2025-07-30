@@ -150,6 +150,7 @@ namespace libTrem {
       a.command.add_listener (ref dwl_command_listener, a);
 
       a.done.connect (() => {
+        printerr ("command %s done\n".printf (command));
         commands.remove (a.command);
       });
 
@@ -158,23 +159,121 @@ namespace libTrem {
   }
 
   public class DwlMonitor : Object {
+    private Json.Object obj;
+    private unowned DwlIpc ipc;
     public string address { get; private set; }
+
+    public string layout { get { return obj.get_string_member ("layout"); } }
+    public bool focused { get { return obj.get_boolean_member ("focused"); } }
+    public int64 seltags { get { return obj.get_int_member ("seltags"); } }
+    public string name { get { return obj.get_string_member ("name"); } }
 
     public signal void layout_changed();
 
-    internal DwlMonitor (string address) {
+    internal async DwlMonitor (string address, DwlIpc ipc) {
       this.address = address;
+      this.ipc = ipc;
+
+      //this.layout_changed.connect (update);
+      //ipc.frame.connect (update);
+      yield update();
+    }
+
+    private async void update () {
+      printerr ("update monitor\n");
+      var loop = new MainLoop ();
+
+      ipc.run_command ("return dwl.get_monitor(%s):serialize()".printf (address)).done.connect ((err, result) => {
+        printerr ("monitor terminou\n");
+        loop.quit ();
+        if (err != 0) {
+          warning ("serialize error: %s", result);
+          return;
+        }
+
+        var parser = new Json.Parser();
+
+        try {
+          return_if_fail (parser.load_from_data (result));
+        } catch (Error e) {
+          warning ("parser error: %s", e.message);
+        }
+
+        var root = parser.get_root ();
+        return_if_fail (root != null);
+
+        var obj = root.get_object ();
+        return_if_fail (obj != null);
+
+        this.obj = obj;
+      });
+
+      printerr ("começando loop");
+
+      loop.run ();
+
+      printerr ("terminando");
     }
   }
 
   public class DwlClient : Object {
+    private unowned DwlIpc ipc;
+    public Json.Object obj { get; private set; }
     public string address { get; private set; }
+
+    public string title { get { return obj.get_string_member ("title"); } }
+    public string app_id { get { return obj.get_string_member ("app_id"); } }
+    public bool focused { get { return obj.get_boolean_member ("focused"); } }
+    public int64 tags { get { return obj.get_int_member ("tags"); } }
+    public string monitor { owned get { return obj.get_int_member ("monitor").to_string (); } }
 
     public signal void title_changed();
     public signal void state_changed();
 
-    internal DwlClient (string address) {
+    internal async DwlClient (string address, DwlIpc ipc) {
       this.address = address;
+      this.ipc = ipc;
+
+      //this.title_changed.connect (update);
+      //this.state_changed.connect (update);
+      //ipc.frame.connect (update);
+      yield update();
+    }
+
+    private async void update () {
+      printerr ("update client\n");
+      var loop = new MainLoop ();
+
+      ipc.run_command ("return dwl.get_monitor(%s):serialize()".printf (address)).done.connect ((err, result) => {
+        printerr ("cliente terminou\n");
+        loop.quit ();
+        if (err != 0) {
+          warning ("serialize error: %s", result);
+          return;
+        }
+
+        var parser = new Json.Parser();
+
+        try {
+          return_if_fail (parser.load_from_data (result));
+        } catch (Error e) {
+          warning ("parser error: %s", e.message);
+        }
+
+        var root = parser.get_root ();
+        return_if_fail (root != null);
+
+        var obj = root.get_object ();
+        return_if_fail (obj != null);
+
+        this.obj = obj;
+      });
+
+      printerr ("começando loop");
+
+      loop.run ();
+
+      printerr ("terminando");
     }
   }
 
@@ -188,44 +287,22 @@ namespace libTrem {
 
     private static Dwl _instance;
 
-    private void get_all_clients (string mon) {
-      string cmd = "local list = {}\n"
-        + "local mon = dwl.get_monitor(%s)\n".printf (mon)
-        + "for _,i in  ipairs(mon:get_clients()) do\n"
-        + "table.insert(list, i.address)\n"
-        + "end\n"
-        + "return table.concat(list,' ')\n";
+    public DwlMonitor get_monitor (string address) throws Error {
+      var c = _monitors.get (address);
 
-      ipc.run_command(cmd).done.connect ((e, m) => {
-        if (e == 0) {
-          var clients = m.split (" ");
+      if (c == null)
+        throw new IOError.NOT_FOUND ("monitor %s não encontrado".printf (address));
 
-          foreach (var client in clients) {
-            on_client_opened (ipc,client);
-          }
-        }
-      });
+      return c;
     }
 
-    private void get_all_monitors () {
-      string cmd = "local list = {}\n"
-        + "local mons = dwl.get_monitors()\n"
-        + "for _,i in  ipairs(mons) do\n"
-        + "table.insert(list, i.address)\n"
-        + "end\n"
-        + "return table.concat(list,' ')\n";
+    public DwlClient get_client (string address) throws Error {
+      var c = _clients.get (address);
 
+      if (c == null)
+        throw new IOError.NOT_FOUND ("client %s não encontrado".printf (address));
 
-      ipc.run_command(cmd).done.connect ((e, m) => {
-        if (e == 0) {
-          var mons = m.split (" ");
-
-          foreach (var mon in mons) {
-            on_monitor_added (ipc, mon);
-            get_all_clients (mon);
-          }
-        }
-      });
+      return c;
     }
 
     construct {
@@ -249,8 +326,48 @@ namespace libTrem {
       return _instance;
     }
 
-    private void on_monitor_added (DwlIpc source, string address) {
-      _monitors.insert (address, new DwlMonitor (address));
+    private void get_all_clients (string mon) {
+      string cmd = "local list = {}\n"
+        + "local mon = dwl.get_monitor(%s)\n".printf (mon)
+        + "for _,i in  ipairs(mon:get_clients()) do\n"
+        + "table.insert(list, i.address)\n"
+        + "end\n"
+        + "return table.concat(list,' ')\n";
+
+      ipc.run_command(cmd).done.connect ((e, m) => {
+        if (e == 0) {
+          var clients = m.split (" ");
+
+          foreach (var client in clients) {
+            on_client_opened.begin (ipc,client);
+          }
+        }
+      });
+    }
+
+    private void get_all_monitors () {
+      string cmd = "local list = {}\n"
+        + "local mons = dwl.get_monitors()\n"
+        + "for _,i in  ipairs(mons) do\n"
+        + "table.insert(list, i.address)\n"
+        + "end\n"
+        + "return table.concat(list,' ')\n";
+
+
+      ipc.run_command(cmd).done.connect ((e, m) => {
+        if (e == 0) {
+          var mons = m.split (" ");
+
+          foreach (var mon in mons) {
+            on_monitor_added.begin (ipc, mon);
+            get_all_clients (mon);
+          }
+        }
+      });
+    }
+
+    private async void on_monitor_added (DwlIpc source, string address) {
+      _monitors.insert (address, yield new DwlMonitor (address, source));
     }
 
     private void on_monitor_removed (DwlIpc source, string address) {
@@ -261,13 +378,14 @@ namespace libTrem {
       var m = _monitors.get (address);
 
       if (m == null)
-        on_monitor_added (source, address);
+        return;
+        //on_monitor_added (source, address);
 
       m.layout_changed ();
     }
 
-    private void on_client_opened (DwlIpc source, string address) {
-      _clients.insert (address, new DwlClient (address));
+    private async void on_client_opened (DwlIpc source, string address) {
+      _clients.insert (address, yield new DwlClient (address, source));
     }
 
     private void on_client_closed (DwlIpc source, string address) {
@@ -278,7 +396,8 @@ namespace libTrem {
       var c = _clients.get (address);
 
       if (c == null)
-        on_client_opened (source, address);
+        return;
+        //on_client_opened (source, address);
 
       c.title_changed ();
     }
@@ -287,7 +406,8 @@ namespace libTrem {
       var c = _clients.get (address);
 
       if (c == null)
-        on_client_opened (source, address);
+        return;
+        //on_client_opened (source, address);
 
       c.state_changed ();
     }

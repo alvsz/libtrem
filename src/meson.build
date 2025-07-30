@@ -21,6 +21,7 @@ deps = [
   dependency('libsecret-1'),
   dependency('wayland-client'),
   dependency('polkit-agent-1'),
+  dependency('json-glib-1.0'),
 ]
 
 vala_services = [
