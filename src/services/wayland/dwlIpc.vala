@@ -186,6 +186,48 @@ namespace libTrem {
     public List<weak DwlMonitor> monitors { owned get { return _monitors.get_values (); } }
     public List<weak DwlClient> clients { owned get { return _clients.get_values (); } }
 
+    private static Dwl _instance;
+
+    private void get_all_clients (string mon) {
+      string cmd = "local list = {}\n"
+        + "local mon = dwl.get_monitor(%s)\n".printf (mon)
+        + "for _,i in  ipairs(mon:get_clients()) do\n"
+        + "table.insert(list, i.address)\n"
+        + "end\n"
+        + "return table.concat(list,' ')\n";
+
+      ipc.run_command(cmd).done.connect ((e, m) => {
+        if (e == 0) {
+          var clients = m.split (" ");
+
+          foreach (var client in clients) {
+            on_client_opened (ipc,client);
+          }
+        }
+      });
+    }
+
+    private void get_all_monitors () {
+      string cmd = "local list = {}\n"
+        + "local mons = dwl.get_monitors()\n"
+        + "for _,i in  ipairs(mons) do\n"
+        + "table.insert(list, i.address)\n"
+        + "end\n"
+        + "return table.concat(list,' ')\n";
+
+
+      ipc.run_command(cmd).done.connect ((e, m) => {
+        if (e == 0) {
+          var mons = m.split (" ");
+
+          foreach (var mon in mons) {
+            on_monitor_added (ipc, mon);
+            get_all_clients (mon);
+          }
+        }
+      });
+    }
+
     construct {
       ipc = new DwlIpc ();
 
@@ -196,20 +238,26 @@ namespace libTrem {
       ipc.client_closed.connect (on_client_closed);
       ipc.client_title_changed.connect (on_client_title_changed);
       ipc.client_state_changed.connect (on_client_state_changed);
+
+      get_all_monitors ();
+    }
+
+    public static Dwl? get_default() {
+      if (_instance == null)
+        _instance = new Dwl();
+
+      return _instance;
     }
 
     private void on_monitor_added (DwlIpc source, string address) {
-      printerr ("monitor added: %s\n", address);
       _monitors.insert (address, new DwlMonitor (address));
     }
 
     private void on_monitor_removed (DwlIpc source, string address) {
-      printerr ("monitor removed: %s\n", address);
       _monitors.remove (address);
     }
 
     private void on_monitor_layout_changed (DwlIpc source, string address) {
-      printerr ("monitor layout: %s\n", address);
       var m = _monitors.get (address);
 
       if (m == null)
@@ -219,17 +267,14 @@ namespace libTrem {
     }
 
     private void on_client_opened (DwlIpc source, string address) {
-      printerr ("client opened: %s\n", address);
       _clients.insert (address, new DwlClient (address));
     }
 
     private void on_client_closed (DwlIpc source, string address) {
-      printerr ("client closed: %s\n", address);
       _clients.remove (address);
     }
 
     private void on_client_title_changed (DwlIpc source, string address) {
-      printerr ("client title: %s\n", address);
       var c = _clients.get (address);
 
       if (c == null)
@@ -239,7 +284,6 @@ namespace libTrem {
     }
 
     private void on_client_state_changed (DwlIpc source, string address) {
-      printerr ("client state: %s\n", address);
       var c = _clients.get (address);
 
       if (c == null)
