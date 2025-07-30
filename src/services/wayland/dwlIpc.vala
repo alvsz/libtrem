@@ -150,7 +150,6 @@ namespace libTrem {
       a.command.add_listener (ref dwl_command_listener, a);
 
       a.done.connect (() => {
-        printerr ("command %s done\n".printf (command));
         commands.remove (a.command);
       });
 
@@ -160,7 +159,7 @@ namespace libTrem {
 
   public class DwlMonitor : Object {
     private Json.Object obj;
-    private unowned DwlIpc ipc;
+    private unowned Dwl dwl_ipc;
     public string address { get; private set; }
 
     public string layout { get { return obj.get_string_member ("layout"); } }
@@ -170,22 +169,16 @@ namespace libTrem {
 
     public signal void layout_changed();
 
-    internal async DwlMonitor (string address, DwlIpc ipc) {
+    internal DwlMonitor (string address, Dwl ipc) {
       this.address = address;
-      this.ipc = ipc;
+      this.dwl_ipc = ipc;
 
-      //this.layout_changed.connect (update);
-      //ipc.frame.connect (update);
-      yield update();
+      ipc.ipc.frame.connect (update);
+      update();
     }
 
-    private async void update () {
-      printerr ("update monitor\n");
-      var loop = new MainLoop ();
-
-      ipc.run_command ("return dwl.get_monitor(%s):serialize()".printf (address)).done.connect ((err, result) => {
-        printerr ("monitor terminou\n");
-        loop.quit ();
+    private void update () {
+      dwl_ipc.ipc.run_command ("return dwl.get_monitor(%s):serialize()".printf (address)).done.connect ((err, result) => {
         if (err != 0) {
           warning ("serialize error: %s", result);
           return;
@@ -206,18 +199,13 @@ namespace libTrem {
         return_if_fail (obj != null);
 
         this.obj = obj;
+        dwl_ipc.frame ();
       });
-
-      printerr ("começando loop");
-
-      loop.run ();
-
-      printerr ("terminando");
     }
   }
 
   public class DwlClient : Object {
-    private unowned DwlIpc ipc;
+    private unowned Dwl dwl_ipc;
     public Json.Object obj { get; private set; }
     public string address { get; private set; }
 
@@ -230,23 +218,16 @@ namespace libTrem {
     public signal void title_changed();
     public signal void state_changed();
 
-    internal async DwlClient (string address, DwlIpc ipc) {
+    internal DwlClient (string address, Dwl ipc) {
       this.address = address;
-      this.ipc = ipc;
+      this.dwl_ipc = ipc;
 
-      //this.title_changed.connect (update);
-      //this.state_changed.connect (update);
-      //ipc.frame.connect (update);
-      yield update();
+      ipc.ipc.frame.connect (update);
+      update();
     }
 
-    private async void update () {
-      printerr ("update client\n");
-      var loop = new MainLoop ();
-
-      ipc.run_command ("return dwl.get_monitor(%s):serialize()".printf (address)).done.connect ((err, result) => {
-        printerr ("cliente terminou\n");
-        loop.quit ();
+    private void update () {
+      dwl_ipc.ipc.run_command ("return dwl.get_client(%s):serialize()".printf (address)).done.connect ((err, result) => {
         if (err != 0) {
           warning ("serialize error: %s", result);
           return;
@@ -267,23 +248,20 @@ namespace libTrem {
         return_if_fail (obj != null);
 
         this.obj = obj;
+        dwl_ipc.frame ();
       });
-
-      printerr ("começando loop");
-
-      loop.run ();
-
-      printerr ("terminando");
     }
   }
 
   public class Dwl : Object {
-    public DwlIpc ipc { get; private set; }
+    internal DwlIpc ipc;
     private HashTable<string, DwlMonitor> _monitors = new HashTable<string, DwlMonitor> (str_hash, str_equal);
     private HashTable<string, DwlClient> _clients = new HashTable<string, DwlClient> (str_hash, str_equal);
 
     public List<weak DwlMonitor> monitors { owned get { return _monitors.get_values (); } }
     public List<weak DwlClient> clients { owned get { return _clients.get_values (); } }
+
+    public signal void frame();
 
     private static Dwl _instance;
 
@@ -367,7 +345,7 @@ namespace libTrem {
     }
 
     private async void on_monitor_added (DwlIpc source, string address) {
-      _monitors.insert (address, yield new DwlMonitor (address, source));
+      _monitors.insert (address, new DwlMonitor (address, this));
     }
 
     private void on_monitor_removed (DwlIpc source, string address) {
@@ -379,13 +357,12 @@ namespace libTrem {
 
       if (m == null)
         return;
-        //on_monitor_added (source, address);
 
       m.layout_changed ();
     }
 
     private async void on_client_opened (DwlIpc source, string address) {
-      _clients.insert (address, yield new DwlClient (address, source));
+      _clients.insert (address, new DwlClient (address, this));
     }
 
     private void on_client_closed (DwlIpc source, string address) {
@@ -397,7 +374,6 @@ namespace libTrem {
 
       if (c == null)
         return;
-        //on_client_opened (source, address);
 
       c.title_changed ();
     }
@@ -407,7 +383,6 @@ namespace libTrem {
 
       if (c == null)
         return;
-        //on_client_opened (source, address);
 
       c.state_changed ();
     }
