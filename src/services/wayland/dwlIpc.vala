@@ -166,6 +166,9 @@ namespace libTrem {
     public bool focused { get { return obj.get_boolean_member ("focused"); } }
     public int64 seltags { get { return obj.get_int_member ("seltags"); } }
     public string name { get { return obj.get_string_member ("name"); } }
+    public double mfact { get { return obj.get_double_member ("mfact"); } }
+    public int64 nmaster { get { return obj.get_int_member ("nmaster"); } }
+    public double scale { get { return obj.get_double_member ("scale"); } }
 
     public signal void layout_changed();
 
@@ -213,6 +216,12 @@ namespace libTrem {
     public string app_id { get { return obj.get_string_member ("app_id"); } }
     public bool focused { get { return obj.get_boolean_member ("focused"); } }
     public int64 tags { get { return obj.get_int_member ("tags"); } }
+    public bool x11 { get { return obj.get_boolean_member ("x11"); } }
+    public bool floating { get { return obj.get_boolean_member ("floating"); } }
+    public bool urgent { get { return obj.get_boolean_member ("urgent"); } }
+    public bool fullscreen { get { return obj.get_boolean_member ("fullscreen"); } }
+    public bool nokill { get { return obj.get_boolean_member ("nokill"); } }
+    public string scratchkey { owned get { return obj.get_string_member ("scratchkey"); } }
     public string monitor { owned get { return obj.get_int_member ("monitor").to_string (); } }
 
     public signal void title_changed();
