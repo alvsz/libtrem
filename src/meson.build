@@ -13,7 +13,8 @@ deps = [
   dependency('libecal-2.0'),
   dependency('libedataserver-1.2'),
   dependency('libical-glib'),
-  # dependency('gtk4'),
+  dependency('gtk4'),
+  dependency('astal-notifd-0.1'),
   # dependency('astal-mpris-0.1'),
   # dependency('astal-cava-0.1'),
   dependency('gdk-pixbuf-2.0'),
@@ -28,6 +29,7 @@ vala_services = [
   './services/weather.vala',
   './services/evolution/evolutionDataServer.vala',
   './services/evolution/calendar.vala',
+  './services/evolution/task.vala',
   './services/remoteSearch.vala',
   './services/network/networkAgent.vala',
   './services/network/networkAgentHandler.vala',
@@ -39,7 +41,7 @@ vala_services = [
 vala_widgets = [
   # './widgets/lockscreenMpris.vala',
   # './widgets/teste.vala',
-  # './widgets/notification.vala',
+  './widgets/notification.vala',
   # './widgets/notificationCenter.vala',
 ]
 dwl_ipc = [
