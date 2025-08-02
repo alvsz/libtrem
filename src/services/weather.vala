@@ -1,7 +1,7 @@
 namespace libTrem {
   public class Weather: Object {
-    private GWeather.Info info;
-    private GClue.Simple simple;
+    public GWeather.Info info { get; private set; }
+    public GClue.Simple simple { get; private set; }
 
     public double latitude { private set; get; }
     public double longitude { private set; get; }

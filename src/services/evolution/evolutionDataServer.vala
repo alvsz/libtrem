@@ -181,29 +181,57 @@ namespace libTrem {
   }
 
   public abstract class Collection : Object {
+    public ECal.Client client { get; protected set; }
+    protected ECal.ClientView client_view;
+    public ECal.ClientSourceType source_type { get; construct; }
+
     public signal void ready();
     public signal void changed();
 
     public E.Source source { get; construct; }
-    public string source_extension { get; construct; }
 
     public string display_name { get { return source.get_display_name(); } }
     public string uid { get { return source.get_uid(); } }
 
-    protected Collection(E.Source s, string t) {
-      Object(source: s, source_extension: t);
+    protected Collection(E.Source s, ECal.ClientSourceType t) {
+      Object(source: s, source_type: t);
     }
 
     construct {
       if (source == null)
         error("source não pode ser null\n");
 
-      init_collection.begin();
+      init_collection.begin((src, res) => {
+      try {
+        init_collection.end(res);
+      } catch (Error e) {
+        warning ("Error: %s", e.message);
+      }
+      });
     }
 
-    public abstract async GLib.SList<Object> query_objects(string sexp) throws Error;
-    public abstract void delete(string uid);
-    protected abstract async void init_collection() throws Error;
+    public async GLib.SList<Object> query_objects(string sexp) throws Error {
+      GLib.SList<ECal.Component> s;
+      yield client.get_object_list_as_comps(sexp,null,out s);
+      return s;
+    }
+
+    public void delete(string uid) {
+      client.remove_object.begin(uid, null, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, null);
+    }
+
+    protected async void init_collection() throws Error {
+        client = (ECal.Client) yield ECal.Client.connect(source, source_type, 0, null);
+        yield client.get_view("#t", null, out client_view);
+
+        client_view.objects_added.connect(() => this.changed());
+        client_view.objects_removed.connect(() => this.changed());
+        client_view.objects_modified.connect(() => this.changed());
+
+        this.ready();
+        this.changed();
+    }
+
   }
 
   public class CollectionTypeService : Object {
@@ -247,7 +275,7 @@ namespace libTrem {
               });
           break;
         default:
-          print("default bugou\n\n\n");
+          printerr ("default bugou\n\n\n");
       }
     }
 
