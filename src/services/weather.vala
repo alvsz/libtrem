@@ -19,18 +19,18 @@ namespace libTrem {
     public string icon_name { private set; get; }
     public string humidity { private set; get; }
     public string pressure { private set; get; }
-    public bool available { private set; get; }
+    public bool available { private set; get; default = false; }
 
     public string app_id { get; construct; }
     public string contact_info { get; construct; }
-    public bool auto_update { get; construct; default = false; }
+    public bool auto_update { get; set; default = false; }
     private uint update_source;
 
     public signal void location_updated(double latitude, double longitude);
     public signal void weather_updated();
 
-    public Weather(string app_id, string contact_info, bool? auto_update) {
-      Object(app_id: app_id, contact_info: contact_info, auto_update:auto_update);
+    public Weather(string app_id, string contact_info, bool auto_update) {
+      Object(app_id: app_id, contact_info: contact_info, auto_update: auto_update);
     }
 
     ~Weather() {
@@ -44,16 +44,19 @@ namespace libTrem {
       if (contact_info == null)
         error("contact_info não pode ser nulo");
 
-      try {
-        make_gclue_simple.begin();
-      }
-      catch (Error err) {
-        warning ("Error: %s\n", err.message);
-      }
+      make_gclue_simple.begin((src, res) => {
+        try {
+          make_gclue_simple.end(res);
+        } catch (Error err) {
+          warning ("Error: %s\n", err.message);
+        }
+      });
     }
 
     private async void make_gclue_simple() throws Error {
+        warning ("pegando geoclue agora");
       simple = yield new GClue.Simple (app_id,GClue.AccuracyLevel.EXACT,null);
+        warning ("achou geoclue");
 
       simple.notify["location"].connect(on_location_update);
       on_location_update();
@@ -64,7 +67,7 @@ namespace libTrem {
       if (auto_update) 
         update_source = Timeout.add_seconds(60*60, () => {
             this.info.update();
-            return true;
+            return auto_update ? Source.CONTINUE : Source.REMOVE;
             });
     }
 
@@ -78,6 +81,7 @@ namespace libTrem {
     }
 
     private void on_location_update() {
+        warning ("location_updated");
       GClue.Location l = simple.get_location();
 
       if (l == null) return;
@@ -104,6 +108,7 @@ namespace libTrem {
     }
     
     private void on_weather_update(GWeather.Info i) {
+        warning ("weather_updated");
       bool network_error = i.network_error();
       available = !network_error;
 

@@ -42,6 +42,7 @@ vala_widgets = [
   './widgets/lockscreenMpris.vala',
   './widgets/notification.vala',
   './widgets/notificationCenter.vala',
+  './widgets/weather.vala',
 ]
 dwl_ipc = [
   dwl_ipc_header,

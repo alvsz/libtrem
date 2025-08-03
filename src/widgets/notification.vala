@@ -113,7 +113,9 @@ namespace libTrem {
       [GtkCallback]
         private Icon? get_icon () {
           return_val_if_fail (notification != null, null);
-          return_val_if_fail (notification.image != null, null);
+
+          if (notification.image == null)
+            return null;
 
           if (notification.image.length > 0) {
             try {
