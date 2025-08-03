@@ -1,7 +1,7 @@
 using Gtk 4.0;
 using AstalNotifd 0.1;
 
-template $NotificationCenter: Box {
+template $libTremNotificationCenter: Box {
   orientation: vertical;
   styles ["notification-center"]
 
@@ -29,8 +29,7 @@ template $NotificationCenter: Box {
     }
   }
 
-  Box notifs {
+  Box notification_box {
     orientation: vertical;
   }
-
 }

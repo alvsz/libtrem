@@ -42,7 +42,7 @@ vala_widgets = [
   # './widgets/lockscreenMpris.vala',
   # './widgets/teste.vala',
   './widgets/notification.vala',
-  # './widgets/notificationCenter.vala',
+  './widgets/notificationCenter.vala',
 ]
 dwl_ipc = [
   dwl_ipc_header,

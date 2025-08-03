@@ -1,4 +1,10 @@
 namespace libTrem {
+  void remove_all_children (Gtk.Box b) {
+    for (Gtk.Widget? w = b.get_first_child (); w != null; w = w.get_next_sibling ()) {
+      b.remove (w);
+    }
+  }
+
   [GtkTemplate(ui = "/com/github/alvsz/libtrem/ui/notification.ui")]
     public class Notification : Gtk.Box {
       private AstalNotifd.Notification _notification;
@@ -11,6 +17,9 @@ namespace libTrem {
       public bool not_hidden { get; private set; default = true; }
       public AstalNotifd.Notification notification { get { return this._notification; } set {
         _notification = value;
+
+        remove_all_children (actions);
+        actions.hide();
 
         notification.actions.foreach ((a) => {
             if (a.id.length == 0)
@@ -53,7 +62,7 @@ namespace libTrem {
             add_css_class ("normal");
             break;
         }
-      }}
+      } }
 
       public Notification (AstalNotifd.Notification notif, bool p, bool h) {
         Object(popup: p, notification: notif);
@@ -66,13 +75,13 @@ namespace libTrem {
       [GtkCallback]
         private string get_app_icon () {
           return_val_if_fail (notification != null, "");
-          return notification?.app_icon ?? notification?.desktop_entry ?? "";
+          return notification.app_icon ?? notification.desktop_entry ?? "";
         }
 
       [GtkCallback]
         private bool app_icon_visible () {
           return_val_if_fail (notification != null, false);
-          if (notification?.app_icon != null || notification?.desktop_entry != null)
+          if (notification.app_icon != null || notification.desktop_entry != null)
             return true;
           else
             return false;
@@ -81,15 +90,15 @@ namespace libTrem {
       [GtkCallback]
         private string get_app_name () {
           return_val_if_fail (notification != null, "");
-          if (notification?.app_name?.length > 0)
-            return notification?.app_name;
+          if (notification.app_name.length > 0)
+            return notification.app_name;
           else return "Desconhecido";
         }
 
       [GtkCallback]
         private string format_time () {
           return_val_if_fail (notification != null, "");
-          return new GLib.DateTime.from_unix_local (notification?.time).format ("%H:%M");
+          return new GLib.DateTime.from_unix_local (notification.time).format ("%H:%M");
         }
 
       [GtkCallback]

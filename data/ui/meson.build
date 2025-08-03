@@ -2,7 +2,7 @@ blueprints = custom_target('blueprints',
   input: files(
     './notification.blp',
     # 'sysTray.blp',
-    # 'notificationCenter.blp',
+    'notificationCenter.blp',
     # 'lockscreenMpris.blp',
   ),
   output: '.',

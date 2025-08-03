@@ -3,7 +3,7 @@
   <gresource prefix="/com/github/alvsz/libtrem">
     <file preprocess="xml-stripblanks">ui/notification.ui</file>
     <!-- <file preprocess="xml-stripblanks">ui/sysTray.ui</file> -->
-    <!-- <file preprocess="xml-stripblanks">ui/notificationCenter.ui</file> -->
+    <file preprocess="xml-stripblanks">ui/notificationCenter.ui</file>
     <!-- <file preprocess="xml-stripblanks">ui/lockscreenMpris.ui</file> -->
   </gresource>
 </gresources>
