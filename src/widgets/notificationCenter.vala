@@ -4,12 +4,13 @@ namespace libTrem {
       public bool not_hidden { get; private set; default = false; }
       public bool hidden { get { return !this.not_hidden; } construct { this.not_hidden = !value; } }
       public bool popup { get; construct; default = true; }
+      public uint timeout { get; construct; default = 5000; }
       public AstalNotifd.Notifd notifd { get; construct; }
 
       private HashTable<uint, Notification> notifications;
 
       [GtkChild]
-        protected unowned Gtk.Box notification_box;
+        private unowned Gtk.Box notification_box;
 
       public NotificationCenter (bool h, bool p) {
         Object (hidden: h, popup: p);
@@ -32,38 +33,55 @@ namespace libTrem {
       }
 
       [GtkCallback]
-        protected void on_notified (AstalNotifd.Notifd self, uint id, bool replaced) {
+        private void on_notified (AstalNotifd.Notifd self, uint id, bool replaced) {
+          Notification notif;
           if (replaced && notifications.get (id) != null) {
-            var notif = notifications.get (id);
+            notif = notifications.get (id);
             if (notif != null) {
               notif.notification = self.get_notification (id);
-              notif.reveal_child = true;
               notification_box.reorder_child_after (notif, null);
             } 
           } else {
-              var notif = new Notification (self.get_notification (id), this.popup, this.hidden);
-              notif.reveal_child = true;
+              notif = new Notification (self.get_notification (id), this.popup, this.hidden);
               notifications.set (id, notif);
               notification_box.prepend (notif);
             }
+          notif.reveal_child = true;
 
           if (hidden || popup)
             show ();
+
+          if (popup) {
+            if (!self.dont_disturb) {
+              this.get_root ()?.show ();
+            }
+
+            Timeout.add (notif.notification.expire_timeout > 0 ? notif.notification.expire_timeout : this.timeout, () => {
+              on_resolved (self, id, AstalNotifd.ClosedReason.EXPIRED);
+              return Source.REMOVE;
+            });
+          }
         }
 
       [GtkCallback]
-        protected void on_resolved (AstalNotifd.Notifd self, uint id, AstalNotifd.ClosedReason reason) {
+        private void on_resolved (AstalNotifd.Notifd self, uint id, AstalNotifd.ClosedReason reason) {
           var notif = notifications.get (id);
           if (notif != null) {
             notif.reveal_child = false;
 
-            Timeout.add (notif.transition_duration, () => {
+            Timeout.add (notif.transition_duration + 1, () => {
               notif.hide ();
               if (notif.get_parent () == notification_box)
                 notification_box.remove (notif);
 
-              if ((hidden || popup) && notification_box.get_first_child () == null)
+              if (notification_box.get_first_child () != null) 
+                return Source.REMOVE;
+
+              if (hidden)
                 hide ();
+              if (popup) 
+                this.get_root ()?.hide ();
+              
               return Source.REMOVE;
             });
           }
