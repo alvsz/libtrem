@@ -138,16 +138,16 @@ namespace libTrem {
       this.id = app_info.get_id() ?? "";
     }
 
-    public static RemoteSearchProvider new_v1(string desktopId, string dbusName, string dbusPath, bool autostart) throws Error {
+    public RemoteSearchProvider.v1(string desktopId, string dbusName, string dbusPath, bool autostart) throws Error {
       var app_info = new DesktopAppInfo(desktopId);
       var backend = new DBusSearchProviderBackend(dbusName,dbusPath,autostart);
-      return new RemoteSearchProvider(app_info,backend);
+      this (app_info, backend);
     }
 
-    public static RemoteSearchProvider new_v2(string desktopId, string dbusName, string dbusPath, bool autostart) throws Error {
+    public RemoteSearchProvider.v2(string desktopId, string dbusName, string dbusPath, bool autostart) throws Error {
       var app_info = new DesktopAppInfo(desktopId);
       var backend = new DBusSearchProvider2Backend(dbusName,dbusPath,autostart);
-      return new RemoteSearchProvider(app_info,backend);
+      this (app_info, backend);
     }
 
     public async GLib.List<ResultMeta> search(string[] query) throws Error {
