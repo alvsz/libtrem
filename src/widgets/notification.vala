@@ -18,8 +18,25 @@ namespace libTrem {
       public AstalNotifd.Notification notification { get { return this._notification; } set {
         _notification = value;
 
-        remove_all_children (actions);
+        switch (notification.urgency) {
+          case AstalNotifd.Urgency.CRITICAL:
+            add_css_class ("critical");
+            break;
+          case AstalNotifd.Urgency.LOW:
+            add_css_class ("low");
+            break;
+          case AstalNotifd.Urgency.NORMAL:
+          default:
+            add_css_class ("normal");
+            break;
+        }
+
         actions.hide();
+        remove_all_children (actions);
+
+        if (hidden)
+          return;
+
 
         notification.actions.foreach ((a) => {
             if (a.id.length == 0)
@@ -49,19 +66,6 @@ namespace libTrem {
             actions.append (b);
             actions.show ();
         });
-
-        switch (notification.urgency) {
-          case AstalNotifd.Urgency.CRITICAL:
-            add_css_class ("critical");
-            break;
-          case AstalNotifd.Urgency.LOW:
-            add_css_class ("low");
-            break;
-          case AstalNotifd.Urgency.NORMAL:
-          default:
-            add_css_class ("normal");
-            break;
-        }
       } }
 
       public Notification (AstalNotifd.Notification notif, bool p, bool h) {

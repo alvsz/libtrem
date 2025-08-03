@@ -15,8 +15,8 @@ deps = [
   dependency('libical-glib'),
   dependency('gtk4'),
   dependency('astal-notifd-0.1'),
-  # dependency('astal-mpris-0.1'),
-  # dependency('astal-cava-0.1'),
+  dependency('astal-mpris-0.1'),
+  dependency('astal-cava-0.1'),
   dependency('gdk-pixbuf-2.0'),
   dependency('libnm'),
   dependency('libsecret-1'),
@@ -39,10 +39,10 @@ vala_services = [
   './services/polkit/polkitAget.vala',
 ]
 vala_widgets = [
-  # './widgets/lockscreenMpris.vala',
-  # './widgets/teste.vala',
+  './widgets/lockscreenMpris.vala',
   './widgets/notification.vala',
   './widgets/notificationCenter.vala',
+  # './widgets/lockscreenNotifications.vala',
 ]
 dwl_ipc = [
   dwl_ipc_header,

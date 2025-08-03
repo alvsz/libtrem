@@ -1,14 +1,15 @@
 namespace libTrem {
   [GtkTemplate(ui = "/com/github/alvsz/libtrem/ui/notificationCenter.ui")]
     public class NotificationCenter : Gtk.Box {
-      public bool hidden { get; construct; default = true; }
-      public bool popup { get; construct; default = false; }
+      public bool not_hidden { get; private set; default = false; }
+      public bool hidden { get { return !this.not_hidden; } construct { this.not_hidden = !value; } }
+      public bool popup { get; construct; default = true; }
       public AstalNotifd.Notifd notifd { get; construct; }
 
       private HashTable<uint, Notification> notifications;
 
       [GtkChild]
-        private unowned Gtk.Box notification_box;
+        protected unowned Gtk.Box notification_box;
 
       public NotificationCenter (bool h, bool p) {
         Object (hidden: h, popup: p);
@@ -20,7 +21,8 @@ namespace libTrem {
 
         notifications = new HashTable<uint, Notification>(GLib.direct_hash, GLib.direct_equal);
         
-        get_old_notifications.begin ();
+        if (!popup)
+          get_old_notifications.begin ();
       }
 
       private async void get_old_notifications () {
@@ -30,7 +32,7 @@ namespace libTrem {
       }
 
       [GtkCallback]
-        private void on_notified (AstalNotifd.Notifd self, uint id, bool replaced) {
+        protected void on_notified (AstalNotifd.Notifd self, uint id, bool replaced) {
           if (replaced && notifications.get (id) != null) {
             var notif = notifications.get (id);
             if (notif != null) {
@@ -43,19 +45,25 @@ namespace libTrem {
               notif.reveal_child = true;
               notifications.set (id, notif);
               notification_box.prepend (notif);
-
             }
+
+          if (hidden || popup)
+            show ();
         }
 
       [GtkCallback]
-        private void on_resolved (AstalNotifd.Notifd self, uint id, AstalNotifd.ClosedReason reason) {
+        protected void on_resolved (AstalNotifd.Notifd self, uint id, AstalNotifd.ClosedReason reason) {
           var notif = notifications.get (id);
           if (notif != null) {
             notif.reveal_child = false;
 
             Timeout.add (notif.transition_duration, () => {
               notif.hide ();
-              notification_box.remove (notif);
+              if (notif.get_parent () == notification_box)
+                notification_box.remove (notif);
+
+              if ((hidden || popup) && notification_box.get_first_child () == null)
+                hide ();
               return Source.REMOVE;
             });
           }
@@ -66,6 +74,14 @@ namespace libTrem {
           notifd.notifications.foreach ((n) => {
             n.dismiss ();
           });
+        }
+
+      [GtkCallback]
+        private bool header_visible () {
+          if (hidden || popup)
+            return false;
+          else
+            return true;
         }
     }
 }

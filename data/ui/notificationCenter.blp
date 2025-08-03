@@ -14,6 +14,8 @@ template $libTremNotificationCenter: Box {
     styles ["header"]
     orientation: horizontal;
     homogeneous: false;
+    visible: bind $header_visible(template.not_hidden) as <bool>;
+
     Label {
       label: "Notificações";
       hexpand: true;
