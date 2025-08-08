@@ -39,8 +39,11 @@ namespace libTrem {
             notif = notifications.get (id);
             if (notif != null) {
               notif.notification = self.get_notification (id);
-              notification_box.reorder_child_after (notif, null);
-            } 
+              if (notif.get_parent () == notification_box)
+                notification_box.reorder_child_after (notif, null);
+              else
+                notification_box.prepend (notif);
+            }
           } else {
               notif = new Notification (self.get_notification (id), this.popup, this.hidden);
               notifications.set (id, notif);

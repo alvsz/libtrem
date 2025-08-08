@@ -1,10 +1,4 @@
 namespace libTrem {
-  void remove_all_children (Gtk.Box b) {
-    for (Gtk.Widget? w = b.get_first_child (); w != null; w = w.get_next_sibling ()) {
-      b.remove (w);
-    }
-  }
-
   [GtkTemplate(ui = "/com/github/alvsz/libtrem/ui/notification.ui")]
     public class Notification : Gtk.Box {
       private AstalNotifd.Notification _notification;
@@ -32,7 +26,18 @@ namespace libTrem {
         }
 
         actions.hide();
-        remove_all_children (actions);
+        var w = actions.get_first_child ();
+        if (w != null) {
+          var s = w.get_next_sibling ();
+          while (w != null) {
+            actions.remove (w);
+            w = s;
+            if (w == null)
+              break;
+
+            s = w.get_next_sibling ();
+          }
+        }
 
         if (hidden)
           return;
@@ -79,7 +84,11 @@ namespace libTrem {
       [GtkCallback]
         private string get_app_icon () {
           return_val_if_fail (notification != null, "");
-          return notification.app_icon ?? notification.desktop_entry ?? "";
+          if (notification.app_icon.length > 0)
+            return notification.app_icon;
+          else if (notification.desktop_entry.length > 0)
+            return notification.desktop_entry;
+          else return "";
         }
 
       [GtkCallback]
@@ -96,7 +105,12 @@ namespace libTrem {
           return_val_if_fail (notification != null, "");
           if (notification.app_name.length > 0)
             return notification.app_name;
-          else return "Desconhecido";
+          else {
+            var app_info = new DesktopAppInfo ("%s.desktop".printf (notification.desktop_entry));
+            if (app_info != null)
+              return app_info.get_display_name ();
+          }
+          return "Desconhecido";
         }
 
       [GtkCallback]

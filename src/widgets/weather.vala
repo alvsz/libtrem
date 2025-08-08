@@ -27,8 +27,6 @@ namespace libTrem {
         if (app_id == null || contact_info == null || weather != null) 
           return;
 
-        warning ("criando weather do widget agora");
-
         weather = new Weather (app_id, contact_info, auto_update);
 
         weather.notify["available"].connect (() => {

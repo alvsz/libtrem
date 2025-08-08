@@ -54,9 +54,7 @@ namespace libTrem {
     }
 
     private async void make_gclue_simple() throws Error {
-        warning ("pegando geoclue agora");
       simple = yield new GClue.Simple (app_id,GClue.AccuracyLevel.EXACT,null);
-        warning ("achou geoclue");
 
       simple.notify["location"].connect(on_location_update);
       on_location_update();
@@ -81,7 +79,6 @@ namespace libTrem {
     }
 
     private void on_location_update() {
-        warning ("location_updated");
       GClue.Location l = simple.get_location();
 
       if (l == null) return;
@@ -108,7 +105,6 @@ namespace libTrem {
     }
     
     private void on_weather_update(GWeather.Info i) {
-        warning ("weather_updated");
       bool network_error = i.network_error();
       available = !network_error;
 
