@@ -86,7 +86,7 @@ namespace libTrem {
           return_val_if_fail (notification != null, "");
           if (notification.app_icon.length > 0)
             return notification.app_icon;
-          else if (notification.desktop_entry.length > 0)
+          else if (notification.desktop_entry != null && notification.desktop_entry.length > 0)
             return notification.desktop_entry;
           else return "";
         }
@@ -106,9 +106,11 @@ namespace libTrem {
           if (notification.app_name.length > 0)
             return notification.app_name;
           else {
-            var app_info = new DesktopAppInfo ("%s.desktop".printf (notification.desktop_entry));
-            if (app_info != null)
-              return app_info.get_display_name ();
+	    if (notification.desktop_entry != null) {
+              var app_info = new DesktopAppInfo ("%s.desktop".printf (notification.desktop_entry));
+              if (app_info != null)
+                return app_info.get_display_name ();
+	    }
           }
           return "Desconhecido";
         }
