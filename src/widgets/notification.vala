@@ -94,7 +94,7 @@ namespace libTrem {
       [GtkCallback]
         private bool app_icon_visible () {
           return_val_if_fail (notification != null, false);
-          if (notification.app_icon != null || notification.desktop_entry != null)
+          if (notification.app_icon.length > 0 || (notification.desktop_entry != null && notification.desktop_entry.length > 0))
             return true;
           else
             return false;
