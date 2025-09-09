@@ -150,7 +150,21 @@ namespace libTrem {
     }
 
     private DateTime ecal_to_date(ECal.ComponentDateTime d) {
-      return new DateTime.from_unix_local(d.get_value().as_timet_with_zone(d.get_value().get_timezone() ?? ECal.util_get_system_timezone()));
+      var icaltime = d.get_value();
+      var tz = icaltime.get_timezone();
+
+      if (tz != null) {
+        return new DateTime.from_unix_utc(icaltime.as_timet_with_zone(tz));
+      } else {
+        return new DateTime.local(
+            icaltime.get_year(),
+            icaltime.get_month(),
+            icaltime.get_day(),
+            icaltime.get_hour(),
+            icaltime.get_minute(),
+            icaltime.get_second()
+            );
+      }
     }
 
     private ECal.ComponentDateTime date_to_ecal(DateTime d) {
