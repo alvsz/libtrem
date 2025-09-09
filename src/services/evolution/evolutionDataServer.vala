@@ -154,7 +154,7 @@ namespace libTrem {
       var tz = icaltime.get_timezone();
 
       if (tz != null) {
-        return new DateTime.from_unix_utc(icaltime.as_timet_with_zone(tz));
+        return new DateTime.from_unix_utc(icaltime.as_timet_with_zone(tz)).to_timezone(new TimeZone.local ());
       } else {
         return new DateTime.local(
             icaltime.get_year(),

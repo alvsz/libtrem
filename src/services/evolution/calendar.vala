@@ -11,26 +11,16 @@ namespace libTrem {
     }
 
     public async GLib.List<Event> get_events_in_range(DateTime start, DateTime end) {
-      string start_str = ECal.isodate_from_time_t((time_t)start.to_unix());
-      string end_str = ECal.isodate_from_time_t((time_t)end.to_unix());
+      GLib.List<Event> l = new GLib.List<Event>();
 
-      string query = """(occur-in-time-range? 
-  (make-time "%s")
-  (make-time "%s"))""".printf(start_str,end_str);
+      client.generate_instances_sync((time_t)start.to_unix(), (time_t)end.to_unix(), null, (icomp, _istart, _iend, _cancellable) => {
+          var comp = new ECal.Component.from_icalcomponent (icomp);
+          var ev = new Event (comp, client);
+          l.append(ev);
+          return true;
+      });
 
-      try {
-        GLib.SList<Object> c = yield query_objects(query);
-        GLib.List<Event> l = new GLib.List<Event>();
-
-        c.foreach((ev) => {
-            l.append(new Event((ECal.Component) ev,this.client));
-            });
-
-        return (owned) l;
-      } catch(Error e) {
-        warning("Error: %s\n", e.message);
-        return new GLib.List<Event>();
-      }
+      return (owned) l;
     }
   }
 
