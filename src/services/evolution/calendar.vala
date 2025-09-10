@@ -6,21 +6,22 @@ namespace libTrem {
   }
 
   public class EventList : Collection {
+    private GLib.List<Event> _events = new GLib.List<Event>();
+    public GLib.List<weak Event> events { owned get { return _events.copy(); } }
+    public signal void event_added();
+
     public EventList(E.Source s) {
       base(s, ECal.ClientSourceType.EVENTS);
     }
 
-    public async GLib.List<Event> get_events_in_range(DateTime start, DateTime end) {
-      GLib.List<Event> l = new GLib.List<Event>();
-
-      client.generate_instances_sync((time_t)start.to_unix(), (time_t)end.to_unix(), null, (icomp, _istart, _iend, _cancellable) => {
+    public async void get_events_in_range(DateTime start, DateTime end) {
+      client.generate_instances((time_t)start.to_unix(), (time_t)end.to_unix(), null, (icomp, _istart, _iend, _cancellable) => {
           var comp = new ECal.Component.from_icalcomponent (icomp);
           var ev = new Event (comp, client);
-          l.append(ev);
+          _events.append(ev);
+          event_added();
           return true;
       });
-
-      return (owned) l;
     }
   }
 
