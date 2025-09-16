@@ -216,11 +216,11 @@ namespace libTrem {
         error("source não pode ser null\n");
 
       init_collection.begin((src, res) => {
-      try {
-        init_collection.end(res);
-      } catch (Error e) {
-        warning ("Error: %s", e.message);
-      }
+        try {
+          init_collection.end(res);
+        } catch (Error e) {
+          warning ("Error: %s", e.message);
+        }
       });
     }
 
@@ -301,7 +301,10 @@ namespace libTrem {
             _collections.set(source.get_uid(), c);
             collection_added(c);
             changed();
+            c.changed.connect(() => {
+              changed();
             });
+        });
       }
     }
 

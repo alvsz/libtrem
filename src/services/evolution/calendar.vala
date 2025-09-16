@@ -6,24 +6,64 @@ namespace libTrem {
   }
 
   public class EventList : Collection {
-    private GLib.List<Event> _events = new List<Event>();
-    public GLib.List<weak Event> events { owned get { return _events.copy(); } }
-    public signal void event_added();
+    private HashTable<string, Event> _events = new HashTable<string, Event>(str_hash, str_equal);
+    public GLib.List<weak Event> events { owned get { return _events.get_values(); } }
 
     public EventList(E.Source s) {
       base(s, ECal.ClientSourceType.EVENTS);
-    }
 
-    public void get_events_in_range(DateTime start, DateTime end) {
-      _events.foreach((a) => {
-          _events.remove(a);
+      client_view.objects_added.connect((self, objects) => {
+        objects.foreach((comp) => {
+          client.generate_instances_for_object(comp, 0, 99999, null, (icomp, _istart, _iend, _cancellable) => {
+            var ecomp = new ECal.Component.from_icalcomponent (icomp);
+            var ev = new Event (ecomp, client);
+            var key = "%s-%s".printf(ecomp.get_uid(), icomp.get_recurrenceid().as_ical_string());
+            _events.set(key, ev);
+            changed();
+
+            return true;
+          });
+        });
       });
 
+      client_view.objects_removed.connect((self, objects) => {
+        objects.foreach((comp) => {
+          var uid = comp.get_uid();
+          _events.get_keys().foreach((key) => {
+            if (key.has_prefix(uid)) {
+              _events.remove(key);
+              changed();
+            }
+          });
+        });
+      });
+
+      client_view.objects_modified.connect((self, objects) => {
+        objects.foreach((comp) => {
+          client.generate_instances_for_object(comp, 0, 99999, null, (icomp, _istart, _iend, _cancellable) => {
+            var ecomp = new ECal.Component.from_icalcomponent (icomp);
+            var ev = new Event (ecomp, client);
+            var key = "%s-%s".printf(ecomp.get_uid(), icomp.get_recurrenceid().as_ical_string());
+            _events.set(key, ev);
+            changed();
+
+            return true;
+          });
+        });
+      });
+    }
+
+    public async void get_events_in_range(DateTime start, DateTime end) {
       client.generate_instances((time_t)start.to_unix(), (time_t)end.to_unix(), null, (icomp, _istart, _iend, _cancellable) => {
           var comp = new ECal.Component.from_icalcomponent (icomp);
           var ev = new Event (comp, client);
-          _events.append(ev);
-          event_added();
+          var key = "%s-%s".printf(comp.get_uid(), icomp.get_recurrenceid().as_ical_string());
+
+          if (_events.get(key) == null) {
+            _events.set(key, ev);
+            changed();
+          }
+
           return true;
       });
     }
