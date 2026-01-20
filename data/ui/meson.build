@@ -6,7 +6,9 @@ blueprints = custom_target('blueprints',
     'lockscreenMpris.blp',
     './weather.blp',
     './networkInfo.blp',
-    './networkButton.blp'
+    './networkButton.blp',
+    './bluetoothInfo.blp',
+    './bluetoothButton.blp'
   ),
   output: '.',
   command: [find_program('blueprint-compiler'), 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],

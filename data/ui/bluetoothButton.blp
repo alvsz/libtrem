@@ -1,0 +1,34 @@
+using Gtk 4.0;
+using AstalBluetooth 0.1;
+using Adw 1;
+
+template $libTremBluetoothButton: Button {
+  clicked => $on_click();
+  styles ["networkButton"]
+
+  Box {
+    orientation: horizontal;
+    homogeneous: false;
+    Image {
+      icon-name: bind template.device as <AstalBluetooth.Device>.icon;
+      styles ["icon"]
+    }
+    Label {
+      justify: left;
+      halign: start;
+      wrap: false;
+      ellipsize: end;
+      hexpand: true;
+      label: bind template.device as <AstalBluetooth.Device>.alias;
+    }
+    Image {
+      icon-name: "object-select-symbolic";
+      visible: bind template.device as <AstalBluetooth.Device>.connected;
+    }
+    Adw.Spinner {
+      visible: bind template.device as <AstalBluetooth.Device>.connecting;
+    }
+  }
+
+}
+

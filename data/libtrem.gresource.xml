@@ -8,5 +8,7 @@
     <file preprocess="xml-stripblanks">ui/weather.ui</file>
     <file preprocess="xml-stripblanks">ui/networkInfo.ui</file>
     <file preprocess="xml-stripblanks">ui/networkButton.ui</file>
+    <file preprocess="xml-stripblanks">ui/bluetoothInfo.ui</file>
+    <file preprocess="xml-stripblanks">ui/bluetoothButton.ui</file>
   </gresource>
 </gresources>

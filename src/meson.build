@@ -18,6 +18,7 @@ deps = [
   dependency('astal-mpris-0.1'),
   dependency('astal-cava-0.1'),
   dependency('astal-network-0.1'),
+  dependency('astal-bluetooth-0.1'),
   dependency('gdk-pixbuf-2.0'),
   dependency('libnm'),
   dependency('libadwaita-1'),
@@ -46,7 +47,9 @@ vala_widgets = [
   './widgets/notificationCenter.vala',
   './widgets/weather.vala',
   './widgets/networkInfo.vala',
-  './widgets/networkButton.vala'
+  './widgets/networkButton.vala',
+  './widgets/bluetoothInfo.vala',
+  './widgets/bluetoothButton.vala'
 ]
 dwl_ipc = [
   dwl_ipc_header,

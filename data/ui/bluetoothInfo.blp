@@ -1,0 +1,68 @@
+using Gtk 4.0;
+using AstalBluetooth 0.1;
+
+template $libTremBluetoothInfo: Box {
+  orientation: vertical;
+  homogeneous: false;
+  halign: fill;
+  valign: fill;
+  styles ["networkPopup"]
+
+  bluetooth: AstalBluetooth.Bluetooth bluetooth {
+    device-added => $on_device_added();
+    device-removed => $on_device_removed();
+    adapter-added => $on_adapter_added();
+    adapter-removed => $on_adapter_removed();
+  };
+
+  Box {
+    orientation: horizontal;
+    homogeneous: false;
+    styles ["header"]
+
+    Button {
+      icon-name: "go-previous";
+      halign: start;
+      clicked => $on_go_back();
+    }
+
+    Label {
+      label: "Bluetooth";
+      hexpand: true;
+      halign: center;
+      styles ["heading"]
+    }
+
+    Switch bt_switch {
+      halign: end;
+      valign: center;
+    }
+  }
+
+  Box {
+    orientation: vertical;
+    styles ["body"]
+    Label {
+      label: "Meus dispositivos";
+      halign: start;
+      valign: center;
+    }
+    Separator { }
+    Box known_devices {
+      orientation: vertical;
+      homogeneous: true;
+    }
+    Label {
+      label: "Outros dispositivos";
+      halign: start;
+      valign: center;
+    }
+    Separator { }
+    Box unknown_devices {
+      orientation: vertical;
+      homogeneous: true;
+    }
+  }
+
+}
+
