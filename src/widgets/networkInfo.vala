@@ -2,12 +2,14 @@ namespace libTrem {
   [GtkTemplate(ui = "/com/github/alvsz/libtrem/ui/networkInfo.ui")]
     public class NetworkInfo : Gtk.Box {
       public AstalNetwork.Network network { get; construct; }
-      public HashTable<string, NetworkButton> aps = new HashTable<string, NetworkButton>(str_hash, str_equal);
+      public List<weak NetworkButton> aps { owned get { return _aps.get_values(); } }
+
+      private HashTable<string, NetworkButton> _aps = new HashTable<string, NetworkButton>(str_hash, str_equal);
       private NetworkButton wired;
 
       public signal void go_back();
 
-      public NetworkInfo (string app_id, string contact_info, bool? auto_update) {
+      public NetworkInfo () {
         Object ();
       }
 
@@ -24,6 +26,8 @@ namespace libTrem {
         this.network.wifi.access_points.foreach((ap) => {
           on_ap_added(ap);
         });
+
+        network.wifi.bind_property("enabled", wifi_switch, "active", GLib.BindingFlags.SYNC_CREATE | GLib.BindingFlags.BIDIRECTIONAL);
       }
 
       internal HashTable<string, NM.SettingWireless> get_known_ssids () {
@@ -38,6 +42,8 @@ namespace libTrem {
       }
 
       [GtkChild]
+        private unowned Gtk.Switch wifi_switch;
+      [GtkChild]
         private unowned Gtk.Box known_access_points;
       [GtkChild]
         private unowned Gtk.Box unknown_access_points;
@@ -47,16 +53,11 @@ namespace libTrem {
           go_back();
         }
 
-      [GtkCallback]
-        private void on_wifi_toggled(Gtk.Switch s) {
-          network.wifi.enabled = s.get_active();
-        }
-
       private void on_ap_added(AstalNetwork.AccessPoint ap) {
         var ssids = get_known_ssids();
         var w = new NetworkButton.from_wireless(ap);
 
-        aps.insert(ap.bssid, w);
+        _aps.insert(ap.bssid, w);
         if (ap.ssid != null && ssids.get(ap.ssid) != null)
           known_access_points.append(w);
         else
@@ -67,21 +68,21 @@ namespace libTrem {
 
       private void on_ap_removed(AstalNetwork.AccessPoint ap) {
         var ssids = get_known_ssids();
-        var w = aps.get(ap.bssid);
+        var w = _aps.get(ap.bssid);
 
         if (ap.ssid != null && ssids.get(ap.ssid) != null)
           known_access_points.remove(w);
         else
           unknown_access_points.remove(w);
 
-        aps.remove(ap.bssid);
+        _aps.remove(ap.bssid);
 
         on_aps_changed();
       }
 
       private void on_aps_changed() {
         var ssids = get_known_ssids();
-        var ap_list = aps.get_values();
+        var ap_list = _aps.get_values();
 
         ap_list.sort((a,b) => {
           return b.ap.strength - a.ap.strength;

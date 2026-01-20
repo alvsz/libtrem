@@ -26,43 +26,37 @@ template $libTremNetworkInfo: Box {
       label: "Internet";
       hexpand: true;
       halign: center;
-      styles ["title"]
+      styles ["heading"]
     }
 
-    Switch {
+    Switch wifi_switch {
       halign: end;
       valign: center;
-      active: bind network.wifi.enabled;
-      activate => $on_wifi_toggled();
     }
   }
 
   Box {
     orientation: vertical;
-    Box {
+    styles ["body"]
+    Label {
+      label: "Minhas redes";
+      halign: start;
+      valign: center;
+    }
+    Separator { }
+    Box known_access_points {
       orientation: vertical;
-      Label {
-        label: "Minhas redes";
-        halign: center;
-        valign: center;
-        styles ["title"]
-      }
-      Separator { }
-      Box known_access_points {
-        orientation: vertical;
-        homogeneous: true;
-      }
-      Label {
-        label: "Outras redes";
-        halign: center;
-        valign: center;
-        styles ["title"]
-      }
-      Separator { }
-      Box unknown_access_points {
-        orientation: vertical;
-        homogeneous: true;
-      }
+      homogeneous: true;
+    }
+    Label {
+      label: "Outras redes";
+      halign: start;
+      valign: center;
+    }
+    Separator { }
+    Box unknown_access_points {
+      orientation: vertical;
+      homogeneous: true;
     }
   }
 
