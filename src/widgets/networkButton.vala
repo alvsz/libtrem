@@ -43,7 +43,13 @@ namespace libTrem {
         ap = a;
         var w = network.wifi;
         ap.bind_property ("icon-name", this, "icon-name", GLib.BindingFlags.SYNC_CREATE);
-        ap.bind_property ("ssid", this, "ssid", GLib.BindingFlags.SYNC_CREATE);
+        ap.bind_property ("ssid", this, "ssid", GLib.BindingFlags.SYNC_CREATE, (bind, from_value, ref to_value) => {
+          if (from_value.get_string () == null)
+            to_value.set_string(ap.bssid);
+          else
+            to_value.set_string (from_value.get_string ());
+          return true;
+        });
         ap.bind_property ("requires_password", this, "password-protected", GLib.BindingFlags.SYNC_CREATE);
 
         w.notify["active-access-point"].connect(() => {

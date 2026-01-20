@@ -19,15 +19,28 @@ namespace libTrem {
         this.network.wifi.access_point_removed.connect(on_ap_removed);
         this.network.wifi.state_changed.connect(on_aps_changed);
         wired = new NetworkButton.from_wired();
-        known_ssids.append(wired);
+        known_access_points.append(wired);
 
         this.network.wifi.access_points.foreach((ap) => {
           on_ap_added(ap);
         });
       }
 
+      internal HashTable<string, NM.SettingWireless> get_known_ssids () {
+        var ssids = new HashTable<string, NM.SettingWireless>(str_hash, str_equal);
+        var conns = network.client.get_connections();
+        foreach (var conn in conns) {
+          var wireless = conn.get_setting_wireless();
+          if (wireless != null)
+            ssids.insert(NM.Utils.ssid_to_utf8(wireless.ssid.get_data()), wireless);
+        }
+        return (owned)ssids;
+      }
+
       [GtkChild]
-        private unowned Gtk.Box known_ssids;
+        private unowned Gtk.Box known_access_points;
+      [GtkChild]
+        private unowned Gtk.Box unknown_access_points;
 
       [GtkCallback]
         private void on_go_back() {
@@ -40,34 +53,61 @@ namespace libTrem {
         }
 
       private void on_ap_added(AstalNetwork.AccessPoint ap) {
-        warning("ap added %s", ap.ssid);
+        var ssids = get_known_ssids();
         var w = new NetworkButton.from_wireless(ap);
+
         aps.insert(ap.bssid, w);
-        known_ssids.append(w);
-          on_aps_changed();
+        if (ap.ssid != null && ssids.get(ap.ssid) != null)
+          known_access_points.append(w);
+        else
+          unknown_access_points.append(w);
+
+        on_aps_changed();
       }
 
       private void on_ap_removed(AstalNetwork.AccessPoint ap) {
-        warning("ap removed %s", ap.ssid);
+        var ssids = get_known_ssids();
         var w = aps.get(ap.bssid);
-        known_ssids.remove(w);
+
+        if (ap.ssid != null && ssids.get(ap.ssid) != null)
+          known_access_points.remove(w);
+        else
+          unknown_access_points.remove(w);
+
         aps.remove(ap.bssid);
-          on_aps_changed();
+
+        on_aps_changed();
       }
 
       private void on_aps_changed() {
-        warning ("changed");
+        var ssids = get_known_ssids();
         var ap_list = aps.get_values();
 
         ap_list.sort((a,b) => {
           return b.ap.strength - a.ap.strength;
         });
 
-        NetworkButton prev = wired;
+        NetworkButton known_prev = wired;
+        Gtk.Widget unknown_prev = null;
 
         foreach (var w in ap_list) {
-          known_ssids.reorder_child_after(w, prev);
-          prev = w;
+          var parent = (Gtk.Box?)w.get_parent();
+
+          if (w.ap.ssid != null && ssids.get(w.ap.ssid) != null) {
+            if (parent != known_access_points) {
+              parent?.remove(w);
+              known_access_points.append(w);
+            }
+            known_access_points.reorder_child_after(w, known_prev);
+            known_prev = w;
+          } else {
+            if (parent != unknown_access_points) {
+              parent?.remove(w);
+              unknown_access_points.append(w);
+            }
+            unknown_access_points.reorder_child_after(w, unknown_prev);
+            unknown_prev = w;
+          }
         }
       }
     }

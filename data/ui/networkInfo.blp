@@ -48,7 +48,18 @@ template $libTremNetworkInfo: Box {
         styles ["title"]
       }
       Separator { }
-      Box known_ssids {
+      Box known_access_points {
+        orientation: vertical;
+        homogeneous: true;
+      }
+      Label {
+        label: "Outras redes";
+        halign: center;
+        valign: center;
+        styles ["title"]
+      }
+      Separator { }
+      Box unknown_access_points {
         orientation: vertical;
         homogeneous: true;
       }
