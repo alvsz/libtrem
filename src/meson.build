@@ -19,6 +19,7 @@ deps = [
   dependency('astal-cava-0.1'),
   dependency('astal-network-0.1'),
   dependency('astal-bluetooth-0.1'),
+  dependency('astal-battery-0.1'),
   dependency('gdk-pixbuf-2.0'),
   dependency('libnm'),
   dependency('libadwaita-1'),
@@ -49,7 +50,9 @@ vala_widgets = [
   './widgets/networkInfo.vala',
   './widgets/networkButton.vala',
   './widgets/bluetoothInfo.vala',
-  './widgets/bluetoothButton.vala'
+  './widgets/bluetoothButton.vala',
+  './widgets/upowerDevice.vala',
+  './widgets/upowerDevices.vala'
 ]
 dwl_ipc = [
   dwl_ipc_header,

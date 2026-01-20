@@ -1,0 +1,30 @@
+using Gtk 4.0;
+using AstalBattery 0.1;
+
+template $libTremUPowerDevice: Box {
+  orientation: horizontal;
+  homogeneous: false;
+  styles ["upowerDevice"]
+
+  Image {
+    icon-name: bind template.device as <AstalBattery.Device>.device-type-icon;
+    styles ["icon"]
+  }
+  Box {
+    orientation: vertical;
+    homogeneous: false;
+    Label {
+      justify: left;
+      halign: start;
+      wrap: false;
+      ellipsize: end;
+      hexpand: true;
+      label: bind template.device as <AstalBattery.Device>.model;
+    }
+    LevelBar {
+      value: bind template.device as <AstalBattery.Device>.percentage;
+    }
+  }
+
+}
+

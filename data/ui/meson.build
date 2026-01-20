@@ -8,7 +8,9 @@ blueprints = custom_target('blueprints',
     './networkInfo.blp',
     './networkButton.blp',
     './bluetoothInfo.blp',
-    './bluetoothButton.blp'
+    './bluetoothButton.blp',
+    './upowerDevice.blp',
+    './upowerDevices.blp'
   ),
   output: '.',
   command: [find_program('blueprint-compiler'), 'batch-compile', '@OUTPUT@', '@CURRENT_SOURCE_DIR@', '@INPUT@'],

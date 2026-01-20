@@ -1,0 +1,16 @@
+using Gtk 4.0;
+using AstalBattery 0.1;
+
+template $libTremUPowerDevices: Box {
+  orientation: vertical;
+  homogeneous: false;
+  halign: fill;
+  valign: fill;
+  styles ["upowerDevices"]
+
+  upower: AstalBattery.UPower upower {
+    device-added => $on_device_added();
+    device-removed => $on_device_removed();
+  };
+}
+
