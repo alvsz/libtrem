@@ -1,0 +1,68 @@
+using Gtk 4.0;
+using AccountsService 1.0;
+
+template $libTremUserCenter : Box {
+  orientation: vertical;
+  homogeneous: false;
+  valign: fill;
+  halign: fill;
+  visible: true;
+  styles ["userCenter"]
+
+  Box {
+    orientation: horizontal;
+    homogeneous: false;
+    valign: start;
+    halign: fill;
+    Image {
+      file: bind template.user as <AccountsService.User>.icon-file;
+      styles ["user-image"]
+    }
+    Box {
+      orientation: vertical;
+      homogeneous: false;
+      valign: center;
+      halign: fill;
+      hexpand: true;
+      Label {
+        label: bind template.user as <AccountsService.User>.real-name;
+        justify: left;
+        halign: start;
+      }
+      Label {
+        label: bind $format_user_name(template.user as <AccountsService.User>.user-name) as <string>;
+        justify: left;
+        halign: start;
+      }
+    }
+    ToggleButton power_toggle {
+      valign: center;
+      halign: end;
+      icon-name: "system-shutdown-symbolic";
+    }
+  }
+  Revealer {
+      transition-type: swing_down;
+      reveal-child: bind power_toggle.active;
+      child: Box {
+        orientation: vertical;
+        homogeneous: true;
+        Button {
+          label: "desligar";
+          clicked => $on_power_off();
+        }
+        Button {
+          label: "reiniciar";
+          clicked => $on_restart();
+        }
+        Button {
+          label: "sair";
+          clicked => $on_log_off();
+        }
+        Button {
+          label: "bloquear";
+          clicked => $on_lock();
+        }
+      };
+  }
+}

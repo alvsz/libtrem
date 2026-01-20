@@ -27,6 +27,7 @@ deps = [
   dependency('wayland-client'),
   dependency('polkit-agent-1'),
   dependency('json-glib-1.0'),
+  dependency('accountsservice')
 ]
 
 vala_services = [
@@ -52,7 +53,8 @@ vala_widgets = [
   './widgets/bluetoothInfo.vala',
   './widgets/bluetoothButton.vala',
   './widgets/upowerDevice.vala',
-  './widgets/upowerDevices.vala'
+  './widgets/upowerDevices.vala',
+  './widgets/userCenter.vala',
 ]
 dwl_ipc = [
   dwl_ipc_header,
