@@ -17,8 +17,10 @@ deps = [
   dependency('astal-notifd-0.1'),
   dependency('astal-mpris-0.1'),
   dependency('astal-cava-0.1'),
+  dependency('astal-network-0.1'),
   dependency('gdk-pixbuf-2.0'),
   dependency('libnm'),
+  dependency('libadwaita-1'),
   dependency('libsecret-1'),
   dependency('wayland-client'),
   dependency('polkit-agent-1'),
@@ -43,6 +45,8 @@ vala_widgets = [
   './widgets/notification.vala',
   './widgets/notificationCenter.vala',
   './widgets/weather.vala',
+  './widgets/networkInfo.vala',
+  './widgets/networkButton.vala'
 ]
 dwl_ipc = [
   dwl_ipc_header,

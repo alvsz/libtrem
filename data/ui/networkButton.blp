@@ -1,0 +1,38 @@
+using Gtk 4.0;
+using Adw 1;
+
+template $libTremNetworkButton: Button {
+  clicked => $on_click();
+  styles ["networkButton"]
+
+  Box {
+    orientation: horizontal;
+    homogeneous: false;
+    Image {
+      icon-name: bind template.icon-name;
+      styles ["icon"]
+    }
+    Label {
+      styles ["networkType"]
+      justify: left;
+      halign: start;
+      wrap: false;
+      ellipsize: end;
+      hexpand: true;
+      label: bind template.ssid;
+    }
+    Image {
+      icon-name: "object-select-symbolic";
+      visible: bind template.connected;
+    }
+    Adw.Spinner {
+      visible: bind template.loading;
+    }
+    Image {
+      icon-name: "dialog-password-symbolic";
+      visible: bind template.password-protected;
+    }
+  }
+
+}
+

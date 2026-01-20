@@ -1,0 +1,59 @@
+using Gtk 4.0;
+using AstalNetwork 0.1;
+
+template $libTremNetworkInfo: Box {
+  orientation: vertical;
+  homogeneous: false;
+  halign: fill;
+  valign: fill;
+  styles ["networkPopup"]
+
+  network: AstalNetwork.Network network {
+  };
+
+  Box {
+    orientation: horizontal;
+    homogeneous: false;
+    styles ["header"]
+
+    Button {
+      icon-name: "go-previous";
+      halign: start;
+      clicked => $on_go_back();
+    }
+
+    Label {
+      label: "Internet";
+      hexpand: true;
+      halign: center;
+      styles ["title"]
+    }
+
+    Switch {
+      halign: end;
+      valign: center;
+      active: bind network.wifi.enabled;
+      activate => $on_wifi_toggled();
+    }
+  }
+
+  Box {
+    orientation: vertical;
+    Box {
+      orientation: vertical;
+      Label {
+        label: "Minhas redes";
+        halign: center;
+        valign: center;
+        styles ["title"]
+      }
+      Separator { }
+      Box known_ssids {
+        orientation: vertical;
+        homogeneous: true;
+      }
+    }
+  }
+
+}
+
