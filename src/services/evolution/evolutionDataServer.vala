@@ -168,7 +168,7 @@ namespace libTrem {
     }
 
     private ECal.ComponentDateTime date_to_ecal(DateTime d) {
-      ICal.Time t = new ICal.Time.from_timet_with_zone((time_t)d.to_unix(),0,ECal.util_get_system_timezone());
+      ICal.Time t = new ICal.Time.from_timet_with_zone((time_t)d.to_unix(),false,ECal.util_get_system_timezone());
       t.set_timezone(ECal.util_get_system_timezone());
       return new ECal.ComponentDateTime(t,null);
     }
