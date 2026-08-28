@@ -32,8 +32,6 @@ namespace libTrem {
           this.remove (w);
           _devices.remove (d.native_path);
         }
-
     }
-
 }
 

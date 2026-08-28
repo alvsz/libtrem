@@ -1,0 +1,21 @@
+using Gtk 4.0;
+using AstalBrightness 0.1;
+
+template $libTremBrighnessDevices: Box {
+  orientation: horizontal;
+  homogeneous: false;
+  styles ["brighnessDevice"]
+
+  Scale {
+    valign: center;
+    halign: fill;
+    hexpand: true;
+    adjustment: Adjustment {
+      value: bind template.device as <AstalBrightness.Device>.real-brightness;
+      lower: 0;
+      upper: bind template.device as <AstalBrightness.Device>.max-brightness;
+      value-changed => $on_value_changed();
+    };
+  }
+}
+
