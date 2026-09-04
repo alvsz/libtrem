@@ -21,6 +21,7 @@ deps = [
   dependency('astal-bluetooth-0.1'),
   dependency('astal-battery-0.1'),
   dependency('astal-brightness-0.1'),
+  dependency('astal-wireplumber-0.1'),
   dependency('gdk-pixbuf-2.0'),
   dependency('libnm'),
   dependency('libadwaita-1'),
@@ -57,7 +58,9 @@ vala_widgets = [
   './widgets/upowerDevices.vala',
   './widgets/userCenter.vala',
   './widgets/brightnessDevice.vala',
-  './widgets/brightnessDevices.vala'
+  './widgets/brightnessDevices.vala',
+  './widgets/audioDevice.vala',
+  './widgets/audioDevices.vala'
 ]
 dwl_ipc = [
   dwl_ipc_header,

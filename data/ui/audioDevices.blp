@@ -1,0 +1,13 @@
+using Gtk 4.0;
+using AstalWp 0.1;
+
+template $libTremAudioDevices: Box {
+  orientation: vertical;
+  homogeneous: false;
+  halign: fill;
+  valign: fill;
+  styles ["audioDevices"]
+
+  wp: AstalWp.Wp { };
+}
+

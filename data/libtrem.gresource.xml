@@ -15,5 +15,7 @@
     <file preprocess="xml-stripblanks">ui/userCenter.ui</file>
     <file preprocess="xml-stripblanks">ui/brightnessDevice.ui</file>
     <file preprocess="xml-stripblanks">ui/brightnessDevices.ui</file>
+    <file preprocess="xml-stripblanks">ui/audioDevice.ui</file>
+    <file preprocess="xml-stripblanks">ui/audioDevices.ui</file>
   </gresource>
 </gresources>

@@ -1,0 +1,26 @@
+using Gtk 4.0;
+using AstalWp 0.1;
+
+template $libTremAudioDevice: Box {
+  orientation: horizontal;
+  homogeneous: false;
+  styles ["audioDevice"]
+
+  Image {
+    icon-name: bind template.device as <AstalWp.Device>.icon;
+    styles ["icon"]
+  }
+
+  Scale {
+    valign: center;
+    halign: fill;
+    hexpand: true;
+    adjustment: Adjustment {
+      value: bind template.device as <AstalWp.Endpoint>.volume;
+      lower: 0;
+      upper: 1;
+      value-changed => $on_value_changed();
+    };
+  }
+}
+
